@@ -1,0 +1,454 @@
+---
+title: 'AI Analysis'
+description: 'Intelligent medical case analysis powered by LLMs'
+icon: 'microchip'
+---
+
+## Overview
+
+MedMitra's AI analysis system uses advanced language models and a multi-agent workflow to generate comprehensive medical insights from case data. The system processes lab results, radiology findings, and clinical notes to produce structured medical documentation.
+
+## Analysis Architecture
+
+The AI analysis uses a state-based workflow built with LangGraph:
+
+<Steps>
+  <Step title="Document Processing">
+    Lab and radiology documents are analyzed to extract clinical information
+  </Step>
+  <Step title="Case Summary Generation">
+    All findings are synthesized into a comprehensive case overview
+  </Step>
+  <Step title="SOAP Note Creation">
+    Structured clinical documentation following SOAP format
+  </Step>
+  <Step title="Diagnosis Generation">
+    Primary diagnosis with supporting evidence and ICD codes
+  </Step>
+  <Step title="Insights Compilation">
+    All analyses are combined and saved to the database
+  </Step>
+</Steps>
+
+## Medical Insights Agent
+
+The core of the AI system is the `MedicalInsightsAgent`:
+
+```python
+class MedicalInsightsAgent(BaseAgent):
+    def __init__(self, model_name: str = "llama-3.3-70b-versatile", temperature: float = 0.2):
+        self.llm_manager = LLMManager(model_name=model_name, temperature=temperature)
+        self.supabase = SupabaseCaseClient()
+        self.workflow = self.build_workflow()
+```
+
+Source: `backend/agents/medical_ai_agent.py:24-29`
+
+### Workflow Configuration
+
+The agent builds a state graph with processing nodes:
+
+```python
+def build_workflow(self) -> StateGraph:
+    builder = StateGraph(MedicalAnalysisState)
+    
+    # Add processing nodes
+    builder.add_node("process_lab_documents", self._process_lab_documents)
+    builder.add_node("process_radiology_documents", self._process_radiology_documents)
+    builder.add_node("generate_case_summary", self._generate_case_summary)
+    builder.add_node("generate_soap_note", self._generate_soap_note)
+    builder.add_node("generate_diagnosis", self._generate_diagnosis)
+    builder.add_node("compile_insights", self._compile_insights)
+    builder.add_node("save_results", self._save_results)
+    
+    # Set up workflow edges
+    builder.set_entry_point("process_lab_documents")
+    builder.add_edge("process_lab_documents", "process_radiology_documents")
+    builder.add_edge("process_radiology_documents", "generate_case_summary")
+    builder.add_edge("generate_case_summary", "generate_soap_note")
+    builder.add_edge("generate_soap_note", "generate_diagnosis")
+    builder.add_edge("generate_diagnosis", "compile_insights")
+    builder.add_edge("compile_insights", "save_results")
+    
+    return builder.compile()
+```
+
+Source: `backend/agents/medical_ai_agent.py:31-67`
+
+## Analysis Stages
+
+### 1. Lab Document Analysis
+
+Laboratory documents are processed to extract structured data:
+
+```python
+async def _process_lab_documents(self, state: MedicalAnalysisState):
+    processed_docs = []
+    
+    for lab_file in state["case_input"].lab_files:
+        if lab_file.text_data:
+            # Generate lab analysis using LLM
+            lab_analysis = await self.llm_manager.generate_response(
+                system_prompt=LAB_ANALYSIS_PROMPT, 
+                user_input=lab_file.text_data
+            )
+            
+            lab_doc = LabDocument(
+                file_id=lab_file.file_id,
+                file_name=lab_file.file_name,
+                extracted_text=lab_file.text_data,
+                lab_values=lab_analysis.get("lab_values"),
+                summary=lab_analysis.get("summary")
+            )
+            processed_docs.append(lab_doc)
+    
+    state["processed_lab_docs"] = processed_docs
+    return state
+```
+
+Source: `backend/agents/medical_ai_agent.py:71-92`
+
+**Extracted Information:**
+- Lab values with units
+- Abnormal flags and critical values
+- Trends compared to reference ranges
+- Clinical significance of findings
+
+### 2. Radiology Document Analysis
+
+Radiology findings are organized from vision AI output:
+
+```python
+async def _process_radiology_documents(self, state: MedicalAnalysisState):
+    processed_docs = []
+    
+    for radiology_file in state["case_input"].radiology_files:
+        if radiology_file.ai_summary:
+            # Extract summary from JSON or use raw text
+            ai_summary_data = json.loads(radiology_file.ai_summary)
+            summary_text = ai_summary_data.get("summary", radiology_file.ai_summary)
+            
+            radiology_doc = RadiologyDocument(
+                file_id=radiology_file.file_id,
+                file_name=radiology_file.file_name,
+                summary=summary_text
+            )
+            processed_docs.append(radiology_doc)
+    
+    state["processed_radiology_docs"] = processed_docs
+    return state
+```
+
+Source: `backend/agents/medical_ai_agent.py:94-119`
+
+### 3. Case Summary Generation
+
+All findings are synthesized into a comprehensive overview:
+
+```python
+async def _generate_case_summary(self, state: MedicalAnalysisState):
+    patient_data = state["case_input"].patient_data
+    
+    case_context = {
+        "patient_info": f"Name: {patient_data.name}, Age: {patient_data.age}, Gender: {patient_data.gender}",
+        "doctor_notes": state["case_input"].doctor_case_summary or "None provided",
+        "lab_summaries": "; ".join([doc.summary for doc in state["processed_lab_docs"] if doc.summary]),
+        "radiology_summaries": "; ".join([doc.summary for doc in state["processed_radiology_docs"] if doc.summary])
+    }
+    
+    summary_response = await self.llm_manager.generate_response(
+        system_prompt=CASE_SUMMARY_PROMPT,
+        prompt_variables=case_context
+    )
+    
+    case_summary = CaseSummary(
+        comprehensive_summary=summary_response.get("comprehensive_summary", ""),
+        key_findings=summary_response.get("key_findings", []),
+        patient_context=state["case_input"].patient_data,
+        doctor_notes=state["case_input"].doctor_case_summary,
+        lab_summary="; ".join([doc.summary for doc in state["processed_lab_docs"]]),
+        radiology_summary="; ".join([doc.summary for doc in state["processed_radiology_docs"]]),
+        confidence_score=summary_response.get("confidence_score", 0.8)
+    )
+    
+    state["case_summary"] = case_summary
+    return state
+```
+
+Source: `backend/agents/medical_ai_agent.py:121-162`
+
+**Generated Output:**
+- Comprehensive case narrative
+- Key clinical findings
+- Patient context and demographics
+- Integrated lab and radiology summaries
+- Confidence score (0.0 to 1.0)
+
+### 4. SOAP Note Generation
+
+Structured clinical documentation is created from the case summary:
+
+```python
+async def _generate_soap_note(self, state: MedicalAnalysisState):
+    soap_response = await self.llm_manager.generate_response(
+        system_prompt=SOAP_NOTE_PROMPT,
+        user_input="Case Summary" + state["case_summary"].model_dump_json()
+    )
+    
+    soap_note = SOAPNote(
+        subjective=soap_response.get("subjective", ""),
+        objective=soap_response.get("objective", ""),
+        assessment=soap_response.get("assessment", ""),
+        plan=soap_response.get("plan", ""),
+        confidence_score=soap_response.get("confidence_score", 0.8)
+    )
+    
+    state["soap_note"] = soap_note
+    return state
+```
+
+Source: `backend/agents/medical_ai_agent.py:164-184`
+
+See [SOAP Notes](/features/soap-notes) for detailed information.
+
+### 5. Diagnosis Generation
+
+Primary diagnosis with supporting evidence:
+
+```python
+async def _generate_diagnosis(self, state: MedicalAnalysisState):
+    diagnosis_response = await self.llm_manager.generate_response(
+        system_prompt=DIAGNOSIS_PROMPT,
+        user_input="SOAP Note: " + state["soap_note"].model_dump_json()
+    )
+    
+    diagnosis = Diagnosis(
+        primary_diagnosis=diagnosis_response.get("diagnosis", ""),
+        icd_code=diagnosis_response.get("icd_code"),
+        description=diagnosis_response.get("description", ""),
+        confidence_score=diagnosis_response.get("confidence_score", 0.8),
+        supporting_evidence=diagnosis_response.get("supporting_evidence", [])
+    )
+    
+    state["primary_diagnosis"] = diagnosis
+    return state
+```
+
+Source: `backend/agents/medical_ai_agent.py:186-207`
+
+See [Diagnosis Support](/features/diagnosis-support) for detailed information.
+
+### 6. Insights Compilation
+
+All analyses are combined into a final output:
+
+```python
+async def _compile_insights(self, state: MedicalAnalysisState):
+    # Calculate overall confidence score
+    confidence_scores = [
+        state["case_summary"].confidence_score,
+        state["soap_note"].confidence_score,
+        state["primary_diagnosis"].confidence_score
+    ]
+    overall_confidence = sum(confidence_scores) / len(confidence_scores)
+    
+    medical_insights = MedicalInsights(
+        case_summary=state["case_summary"],
+        soap_note=state["soap_note"],
+        primary_diagnosis=state["primary_diagnosis"],
+        overall_confidence_score=overall_confidence
+    )
+    
+    state["medical_insights"] = medical_insights
+    return state
+```
+
+Source: `backend/agents/medical_ai_agent.py:260-286`
+
+### 7. Results Storage
+
+Insights are saved to the database:
+
+```python
+async def _save_results(self, state: MedicalAnalysisState):
+    try:
+        insights_data = state["medical_insights"].model_dump()
+        
+        await self.supabase.upload_ai_insights(
+            case_id=state["case_input"].case_id,
+            insights=insights_data
+        )
+        
+        state["processing_stage"] = "completed"
+        
+    except Exception as e:
+        logger.error(f"Error saving results: {e}")
+        state["processing_errors"].append(f"Error saving results: {str(e)}")
+        state["processing_stage"] = "error"
+    
+    return state
+```
+
+Source: `backend/agents/medical_ai_agent.py:288-310`
+
+## Data Models
+
+### Medical Insights Model
+
+```python
+class MedicalInsights(BaseModel):
+    case_summary: CaseSummary
+    soap_note: SOAPNote
+    primary_diagnosis: Diagnosis
+    overall_confidence_score: float = Field(ge=0.0, le=1.0)
+    generated_at: datetime = Field(default_factory=datetime.now)
+```
+
+### Case Summary Model
+
+```python
+class CaseSummary(BaseModel):
+    comprehensive_summary: str
+    key_findings: List[str]
+    patient_context: PatientData
+    doctor_notes: Optional[str] = None
+    lab_summary: Optional[str] = None
+    radiology_summary: Optional[str] = None
+    confidence_score: float = Field(ge=0.0, le=1.0)
+```
+
+Source: `backend/models/data_models.py:54-104`
+
+## LLM Configuration
+
+The system uses Groq's Llama-3.3-70B model:
+
+<CardGroup cols={2}>
+  <Card title="Model" icon="brain">
+    llama-3.3-70b-versatile
+  </Card>
+  <Card title="Temperature" icon="temperature-half">
+    0.2 (for consistent medical outputs)
+  </Card>
+  <Card title="Max Tokens" icon="maximize">
+    Varies by prompt (1024-2048)
+  </Card>
+  <Card title="Response Format" icon="code">
+    Structured JSON with validation
+  </Card>
+</CardGroup>
+
+## Confidence Scoring
+
+Each analysis component includes a confidence score:
+
+<Steps>
+  <Step title="Individual Scores">
+    Each analysis stage (summary, SOAP, diagnosis) generates its own confidence score
+  </Step>
+  <Step title="Overall Score">
+    Average of all component scores provides overall confidence
+  </Step>
+  <Step title="Interpretation">
+    - 0.9-1.0: High confidence
+    - 0.7-0.9: Moderate confidence
+    - Below 0.7: Low confidence, requires review
+  </Step>
+</Steps>
+
+## Processing States
+
+The workflow tracks processing through states:
+
+```python
+state["processing_stage"] values:
+- "initialized"
+- "lab_documents_processed"
+- "radiology_documents_processed"
+- "case_summary_generated"
+- "soap_note_generated"
+- "diagnosis_generated"
+- "insights_compiled"
+- "completed"
+- "error"
+```
+
+## Error Handling
+
+<AccordionGroup>
+  <Accordion title="LLM Failures">
+    - Retry with exponential backoff
+    - Fall back to simpler prompts
+    - Log errors for manual review
+  </Accordion>
+  
+  <Accordion title="Data Validation">
+    - Pydantic models ensure structure
+    - Missing fields use defaults
+    - Invalid data triggers re-analysis
+  </Accordion>
+  
+  <Accordion title="State Management">
+    - Processing errors logged in state
+    - Partial results saved when possible
+    - Failed cases marked for retry
+  </Accordion>
+</AccordionGroup>
+
+## Usage Example
+
+```python
+# Initialize agent
+medical_agent = MedicalInsightsAgent()
+
+# Prepare case input
+case_input = CaseInput(
+    case_id=case_id,
+    patient_data=PatientData(
+        name=patient_name,
+        age=patient_age,
+        gender=patient_gender
+    ),
+    doctor_case_summary=case_summary,
+    lab_files=processed_lab_files,
+    radiology_files=processed_radiology_files
+)
+
+# Process case
+medical_insights = await medical_agent.process(case_input)
+
+# Access results
+print(medical_insights.case_summary.comprehensive_summary)
+print(medical_insights.soap_note.assessment)
+print(medical_insights.primary_diagnosis.primary_diagnosis)
+```
+
+Source: `backend/agents/medical_ai_agent.py:314-333`
+
+## Performance Considerations
+
+<CardGroup cols={2}>
+  <Card title="Async Processing" icon="clock">
+    All LLM calls use async/await for non-blocking execution
+  </Card>
+  <Card title="Parallel Analysis" icon="diagram-project">
+    Lab and radiology processing run concurrently
+  </Card>
+  <Card title="State Caching" icon="database">
+    Intermediate results cached in workflow state
+  </Card>
+  <Card title="Model Efficiency" icon="gauge-high">
+    Optimized temperature and token limits for medical use
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="SOAP Notes" icon="notes-medical" href="/features/soap-notes">
+    Deep dive into SOAP note generation
+  </Card>
+  <Card title="Diagnosis Support" icon="stethoscope" href="/features/diagnosis-support">
+    Learn about diagnostic capabilities
+  </Card>
+</CardGroup>

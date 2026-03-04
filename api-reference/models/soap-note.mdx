@@ -1,0 +1,130 @@
+---
+title: 'SOAP Note Model'
+description: 'Structured clinical documentation in SOAP format'
+---
+
+## SOAPNote
+
+The `SOAPNote` model represents structured clinical documentation following the SOAP (Subjective, Objective, Assessment, Plan) format, which is a standard method for organizing patient information in medical records.
+
+### Fields
+
+<ResponseField name="subjective" type="string" required>
+  **Subjective** - Patient's reported symptoms, complaints, and history
+  
+  This section captures:
+  - Chief complaint
+  - Patient's description of symptoms
+  - Medical history relevant to the current condition
+  - Patient's perspective on their condition
+</ResponseField>
+
+<ResponseField name="objective" type="string" required>
+  **Objective** - Observable, measurable, and verifiable findings
+  
+  This section includes:
+  - Vital signs (BP, HR, RR, temperature, SpO2)
+  - Physical examination findings
+  - Laboratory test results
+  - Imaging and diagnostic test results
+  - Any quantifiable clinical data
+</ResponseField>
+
+<ResponseField name="assessment" type="string" required>
+  **Assessment** - Clinical interpretation and evaluation
+  
+  This section contains:
+  - Clinical diagnosis or working diagnosis
+  - Interpretation of subjective and objective data
+  - Disease severity assessment
+  - Differential diagnoses consideration
+  - Clinical reasoning and analysis
+</ResponseField>
+
+<ResponseField name="plan" type="string" required>
+  **Plan** - Treatment strategy and follow-up actions
+  
+  This section outlines:
+  - Treatment interventions
+  - Medications and dosages
+  - Procedures or referrals
+  - Follow-up schedule
+  - Patient education
+  - Monitoring parameters
+</ResponseField>
+
+<ResponseField name="confidence_score" type="float" required>
+  AI confidence score for the SOAP note generation (range: 0.0 to 1.0)
+  
+  Higher scores indicate greater confidence in the accuracy and completeness of the generated SOAP note.
+</ResponseField>
+
+### Validation Rules
+
+- All SOAP sections (subjective, objective, assessment, plan) are **required**
+- `confidence_score` must be between 0.0 and 1.0 (inclusive)
+- Validated using Pydantic's `Field(ge=0.0, le=1.0)` constraint
+
+### Example
+
+```json
+{
+  "subjective": "65-year-old female with known Type 2 diabetes reports increased thirst and frequent urination for the past week. Patient states she has been less compliant with her medication regimen. Denies fever, weight loss, or abdominal pain. Reports feeling more fatigued than usual.",
+  "objective": "Vital Signs: BP 145/88 mmHg, HR 78 bpm, Temp 98.2°F, RR 16/min, BMI 32. Physical exam: Alert and oriented, appears well-nourished. Cardiovascular: Regular rhythm, no murmurs. Respiratory: Clear breath sounds bilaterally. Abdomen: Soft, non-tender. Labs: Fasting glucose 285 mg/dL, HbA1c 9.2%, Creatinine 1.1 mg/dL, eGFR 65 mL/min.",
+  "assessment": "Uncontrolled Type 2 Diabetes Mellitus with poor glycemic control (HbA1c 9.2%). Patient demonstrates medication non-adherence contributing to hyperglycemia. No evidence of diabetic ketoacidosis. Mild hypertension also noted. Patient at moderate risk for diabetes-related complications.",
+  "plan": "1. Restart and intensify diabetes management: increase Metformin to 1000mg BID, add Glipizide 5mg daily. 2. Initiate BP management with Lisinopril 10mg daily. 3. Diabetes education referral for medication adherence counseling. 4. Recommend home glucose monitoring 2x daily (fasting and pre-dinner). 5. Dietitian referral for medical nutrition therapy. 6. Follow-up in 2 weeks to assess glucose control. 7. Repeat HbA1c in 3 months. 8. Annual diabetic foot exam and ophthalmology referral scheduled.",
+  "confidence_score": 0.91
+}
+```
+
+### Clinical Use Cases
+
+SOAP notes are used for:
+
+1. **Medical Documentation**: Standard format for recording patient encounters
+2. **Care Continuity**: Helps other healthcare providers understand patient status
+3. **Legal Record**: Serves as official medical-legal documentation
+4. **Clinical Decision Support**: Structures information for better clinical reasoning
+5. **Quality Assurance**: Enables review and audit of clinical care
+
+### SOAP Format Best Practices
+
+#### Subjective Section
+- Use patient's own words when possible
+- Document chronologically
+- Include relevant history
+- Note symptom characteristics (location, quality, severity, duration)
+
+#### Objective Section
+- Record all vital signs
+- Document physical exam findings systematically
+- Include all relevant lab and imaging results
+- Use precise measurements and observations
+
+#### Assessment Section
+- State the diagnosis or working diagnosis clearly
+- Show clinical reasoning
+- Consider differential diagnoses
+- Note severity and prognosis
+
+#### Plan Section
+- Be specific about treatments and interventions
+- Include medication names, doses, routes, and frequencies
+- Specify follow-up timeline
+- Document patient education provided
+
+### Integration with MedMitra
+
+In the MedMitra system, SOAP notes are:
+- Auto-generated by AI from case data
+- Included as part of the `MedicalInsights` output
+- Based on doctor's notes, lab results, and radiology findings
+- Validated for completeness and consistency
+- Scored for AI confidence in the generation quality
+
+## Related Models
+
+- [Medical Insights Model](/api-reference/models/insights) - Parent model containing SOAP notes
+- [Case Model](/api-reference/models/case) - Input case data used to generate SOAP notes
+- [Diagnosis Model](/api-reference/models/diagnosis) - Related diagnostic information
+- [Patient Model](/api-reference/models/patient) - Patient data referenced in SOAP notes

@@ -1,0 +1,540 @@
+---
+title: "Viewing AI Insights"
+description: "Learn how to access and interpret AI-generated medical insights in MedMitra"
+icon: "brain"
+---
+
+After creating a case and uploading documents, MedMitra's AI agents generate comprehensive medical insights. This guide shows you how to access and understand these insights.
+
+## Accessing Case Insights
+
+<Steps>
+  <Step title="Navigate to Cases">
+    From the dashboard, click on **Cases** in the navigation menu to view all your patient cases.
+  </Step>
+
+  <Step title="Check Case Status">
+    Cases display status badges:
+    
+    - **Processing**: AI analysis is still running
+    - **Completed**: Insights are ready to view
+    - **Failed**: An error occurred (rare)
+    
+    <Tip>
+      Processing typically takes 30 seconds to 2 minutes depending on the number and size of documents.
+    </Tip>
+  </Step>
+
+  <Step title="Open Case Details">
+    Click on any completed case row to view the full case details and AI insights.
+    
+    The case details page opens with comprehensive information displayed in an intuitive layout.
+  </Step>
+</Steps>
+
+## Understanding the Case Details Page
+
+The case details page is organized into several key sections:
+
+### Header Section
+
+At the top of the page, you'll find:
+
+- **Patient name** and case title
+- **Status badge** showing current case state
+- **Overall AI confidence score** as a percentage
+- **Last updated timestamp**
+- **Action buttons**: Share, Edit, Export PDF
+
+<Frame>
+  <img src="/images/case-header.png" alt="Case Header" />
+</Frame>
+
+### AI Insights Overview (Top Cards)
+
+Three prominent cards provide the most critical information at a glance:
+
+<CardGroup cols={3}>
+  <Card title="Primary Diagnosis" icon="stethoscope">
+    **Contains:**
+    - Primary diagnosis name
+    - ICD-10 code
+    - Confidence score
+    - Brief description
+    
+    **Example:**
+    ```
+    Diagnosis: Type 2 Diabetes Mellitus
+    ICD-10: E11.9
+    Confidence: 94%
+    ```
+  </Card>
+  
+  <Card title="Key Findings" icon="exclamation-circle">
+    **Contains:**
+    - Top 3 most important findings
+    - Bullet-point format
+    - Extracted from all documents
+    
+    **Example:**
+    - Elevated fasting glucose (142 mg/dL)
+    - HbA1c at 7.8%
+    - Microalbuminuria detected
+  </Card>
+  
+  <Card title="AI Summary" icon="file-lines">
+    **Contains:**
+    - Comprehensive case overview
+    - Integration of all data sources
+    - Clinical context
+    - Summary confidence score
+  </Card>
+</CardGroup>
+
+## SOAP Notes Section
+
+The Medical Insights Agent generates structured SOAP notes following the standard clinical format:
+
+<Tabs>
+  <Tab title="Subjective">
+    **Patient-reported information:**
+    - Chief complaint
+    - Symptoms description
+    - Patient's perspective
+    - Symptom timeline
+    
+    Displayed in a blue-highlighted card with relevant information extracted from your case summary.
+  </Tab>
+  
+  <Tab title="Objective">
+    **Measurable clinical data:**
+    - Lab results summary
+    - Vital signs
+    - Physical examination findings
+    - Radiology observations
+    
+    Displayed in an orange-highlighted card with data from uploaded documents.
+  </Tab>
+  
+  <Tab title="Assessment">
+    **Clinical evaluation:**
+    - Diagnosis assessment
+    - Differential diagnoses
+    - Clinical reasoning
+    - Risk factors identified
+    
+    Displayed in a green-highlighted card with AI-generated clinical assessment.
+  </Tab>
+  
+  <Tab title="Plan">
+    **Recommended actions:**
+    - Treatment recommendations
+    - Further tests needed
+    - Follow-up schedule
+    - Management strategy
+    
+    Displayed in a purple-highlighted card with AI-suggested care plan.
+  </Tab>
+</Tabs>
+
+<Note>
+  SOAP notes are generated with their own confidence score, displayed at the top of the section.
+</Note>
+
+## Supporting Evidence
+
+The AI provides transparent reasoning by showing supporting evidence:
+
+- Each piece of evidence is displayed in a separate card
+- Evidence is extracted directly from uploaded documents
+- Links clinical findings to the proposed diagnosis
+- Helps validate AI conclusions
+
+**Example Evidence Items:**
+
+<AccordionGroup>
+  <Accordion title="Lab Evidence">
+    "Fasting glucose level of 142 mg/dL (reference: 70-100) indicates impaired glucose metabolism consistent with diabetes diagnosis."
+  </Accordion>
+  
+  <Accordion title="Radiology Evidence">
+    "Chest X-ray shows clear lung fields with no evidence of active disease, ruling out pulmonary complications."
+  </Accordion>
+  
+  <Accordion title="Clinical Evidence">
+    "Patient reports polyuria and polydipsia for 3 months, classic symptoms of hyperglycemia."
+  </Accordion>
+</AccordionGroup>
+
+## Patient Information Panel
+
+The right sidebar displays:
+
+### Demographics
+- Patient name
+- Age
+- Gender
+- Doctor's notes (your original case summary)
+
+### Test Results Summary
+
+**Laboratory Summary:**
+- Concise summary of all lab findings
+- Highlights abnormal values
+- Notes significant trends
+
+**Radiology Summary:**
+- Overview of imaging findings
+- Key impressions from all images
+- Anatomical areas examined
+
+## Uploaded Files Section
+
+View all documents associated with the case:
+
+<Steps>
+  <Step title="File List">
+    Each file shows:
+    - File name and type icon
+    - File size
+    - Category badge (lab or radiology)
+    - Download button
+  </Step>
+
+  <Step title="Individual AI Analysis">
+    Files that have been analyzed by AI show additional information:
+    
+    - **Findings**: Specific observations from this document
+    - **Impressions**: Clinical conclusions
+    - **Confidence Score**: How confident the AI is about this analysis
+  </Step>
+
+  <Step title="Download Files">
+    Click the download button to retrieve the original document from secure storage.
+  </Step>
+</Steps>
+
+## Confidence Scores Explained
+
+MedMitra displays multiple confidence scores to help you assess AI reliability:
+
+<CardGroup cols={3}>
+  <Card title="Overall Confidence" icon="gauge-high">
+    **Range:** 0-100%
+    
+    Aggregate confidence across all analyses
+    
+    **Interpretation:**
+    - 80-100%: High confidence
+    - 60-79%: Moderate confidence
+    - Below 60%: Low confidence, verify carefully
+  </Card>
+  
+  <Card title="Diagnosis Confidence" icon="stethoscope">
+    **Range:** 0-100%
+    
+    Confidence in the primary diagnosis
+    
+    **Factors:**
+    - Quality of supporting evidence
+    - Consistency across documents
+    - Strength of clinical indicators
+  </Card>
+  
+  <Card title="SOAP Confidence" icon="file-medical">
+    **Range:** 0-100%
+    
+    Confidence in SOAP note generation
+    
+    **Factors:**
+    - Completeness of input data
+    - Clarity of case summary
+    - Document quality
+  </Card>
+</CardGroup>
+
+### Color-Coded Confidence Indicators
+
+Confidence scores are color-coded for quick assessment:
+
+| Score Range | Color | Badge | Interpretation |
+|-------------|-------|-------|----------------|
+| 80-100% | Green | ✅ | High confidence - reliable insights |
+| 60-79% | Yellow | ⚠️ | Moderate confidence - verify findings |
+| 0-59% | Red | ❌ | Low confidence - manual review required |
+
+<Warning>
+  Always use clinical judgment when reviewing AI insights, especially for cases with lower confidence scores.
+</Warning>
+
+## Interpreting AI Insights
+
+Follow these guidelines when reviewing AI-generated insights:
+
+<Steps>
+  <Step title="Start with Confidence Scores">
+    Check the overall and diagnosis confidence scores first. This gives you an immediate sense of how reliable the AI analysis is.
+  </Step>
+
+  <Step title="Review Primary Diagnosis">
+    - Evaluate the proposed diagnosis
+    - Check the ICD-10 code
+    - Read the supporting evidence
+    - Consider differential diagnoses
+  </Step>
+
+  <Step title="Examine SOAP Notes">
+    - Verify subjective information matches your notes
+    - Confirm objective data from lab reports and images
+    - Review the clinical assessment
+    - Evaluate the proposed plan
+  </Step>
+
+  <Step title="Cross-Reference Supporting Evidence">
+    - Check that evidence matches actual document content
+    - Verify numerical values and units
+    - Ensure interpretations are clinically sound
+  </Step>
+
+  <Step title="Review Individual Documents">
+    - Check AI analysis for each uploaded file
+    - Verify findings against the original documents
+    - Look for any missed or misinterpreted information
+  </Step>
+
+  <Step title="Make Clinical Decisions">
+    Use AI insights as a **decision support tool**, not a replacement for clinical judgment:
+    
+    - Integrate AI findings with your clinical expertise
+    - Consider patient context not captured in documents
+    - Order additional tests if needed
+    - Consult specialists when appropriate
+  </Step>
+</Steps>
+
+## Example: Reading a Complete Case
+
+Let's walk through a sample case:
+
+<Accordion title="Case Example: John Doe, 45M">
+  **Header Information:**
+  - Patient: John Doe, 45 years old, Male
+  - Status: Completed
+  - Overall Confidence: 92%
+  - Last Updated: March 4, 2024, 10:23 AM
+  
+  **Primary Diagnosis Card:**
+  - Diagnosis: Type 2 Diabetes Mellitus
+  - ICD-10: E11.9
+  - Confidence: 94%
+  - Description: "Chronic metabolic disorder characterized by hyperglycemia due to insulin resistance"
+  
+  **Key Findings:**
+  1. Elevated fasting glucose at 142 mg/dL (reference: 70-100 mg/dL)
+  2. HbA1c level of 7.8%, indicating poor glycemic control over 3 months
+  3. Microalbuminuria detected, suggesting early diabetic nephropathy
+  
+  **SOAP Notes:**
+  - **S:** Patient reports increased thirst, frequent urination for 3 months, fatigue
+  - **O:** Fasting glucose 142 mg/dL, HbA1c 7.8%, BMI 32, BP 138/88
+  - **A:** Type 2 Diabetes Mellitus with early nephropathy, uncontrolled
+  - **P:** Start metformin 500mg BID, dietary counseling, recheck HbA1c in 3 months
+  
+  **Clinical Interpretation:**
+  The high confidence scores (92% overall, 94% diagnosis) suggest the AI has strong supporting evidence. The diagnosis is well-supported by multiple abnormal values (glucose, HbA1c, albuminuria) and classic symptoms. The SOAP notes integrate the clinical presentation with objective findings logically. This case would be suitable for initiating the AI-recommended treatment plan, with appropriate patient counseling and follow-up.
+</Accordion>
+
+## Actions You Can Take
+
+From the case details page, you can:
+
+<CardGroup cols={3}>
+  <Card title="Export PDF" icon="file-pdf">
+    Generate a comprehensive PDF report including all insights, documents, and analysis
+  </Card>
+  
+  <Card title="Edit Case" icon="pen">
+    Update patient information, add notes, or modify the case summary
+  </Card>
+  
+  <Card title="Share Case" icon="share">
+    Securely share case details with colleagues (coming soon)
+  </Card>
+</CardGroup>
+
+## Data Structure
+
+For developers, here's the AI insights data structure:
+
+<CodeGroup>
+
+```typescript AI Insights Interface
+interface AIInsights {
+  comprehensive_summary: string;
+  key_findings: string[];
+  patient_context: {
+    name: string;
+    age: number;
+    gender: string;
+  };
+  doctor_notes: string;
+  lab_summary: string;
+  radiology_summary: string;
+  case_summary_confidence_score: number;
+  soap_subjective: string;
+  soap_objective: string;
+  soap_assessment: string;
+  soap_plan: string;
+  soap_confidence_score: number;
+  primary_diagnosis: string;
+  icd_code: string;
+  diagnosis_description: string;
+  diagnosis_confidence_score: number;
+  supporting_evidence: string[];
+  overall_confidence_score: number;
+}
+```
+
+```python Backend Response
+# backend/routes/case.py:146-165
+@router.get("/cases/{case_id}")
+async def get_case_by_id(case_id: str):
+    case = await supabase_client.get_case_by_id(case_id=case_id)
+    case_files_data = await supabase_client.get_case_files(case_id=case_id)
+    ai_insights = await supabase_client.get_ai_insights_by_case_id(case_id=case_id)
+    
+    return JSONResponse(
+        status_code=200,
+        content={
+            "case": case,
+            "files": case_files_data,
+            "ai_insights": ai_insights
+        }
+    )
+```
+
+</CodeGroup>
+
+The case details component is located at `frontend/app/cases/[caseid]/page.tsx:42-490`.
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Reviewing AI Insights Efficiently">
+    **Recommended workflow:**
+    
+    1. Quick scan: Check confidence scores and primary diagnosis
+    2. Deep dive: Review SOAP notes section by section
+    3. Verification: Cross-reference with actual documents
+    4. Decision: Make clinical decisions incorporating AI insights
+    5. Documentation: Export or save for patient records
+  </Accordion>
+
+  <Accordion title="When to Trust AI Insights">
+    **High confidence scenarios:**
+    - All confidence scores above 80%
+    - Strong supporting evidence from multiple sources
+    - Clear, consistent findings across documents
+    - Standard clinical presentations
+    
+    **Exercise caution when:**
+    - Confidence scores below 60%
+    - Conflicting information in documents
+    - Complex or unusual presentations
+    - Limited uploaded documents
+  </Accordion>
+
+  <Accordion title="Handling Low Confidence Cases">
+    **If confidence scores are low:**
+    
+    1. Review uploaded documents for quality issues
+    2. Check if important documents are missing
+    3. Ensure case summary is comprehensive
+    4. Consider uploading additional test results
+    5. Manually review all AI interpretations
+    6. Consult with specialists if needed
+    7. Order additional diagnostic tests
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Insights not appearing">
+    **Possible causes:**
+    - Case still processing (check status badge)
+    - Processing failed (status shows 'failed')
+    - No documents uploaded
+    
+    **Solutions:**
+    - Wait for processing to complete
+    - Check case status
+    - Refresh the page
+    - Contact support if status is 'failed'
+  </Accordion>
+
+  <Accordion title="Confidence scores seem too low">
+    **Possible causes:**
+    - Poor quality documents
+    - Incomplete case summary
+    - Insufficient medical data
+    - Ambiguous clinical presentation
+    
+    **Solutions:**
+    - Upload higher quality documents
+    - Add more detailed case summary
+    - Upload additional test results
+    - Include more clinical context
+  </Accordion>
+
+  <Accordion title="AI findings don't match documents">
+    **Possible causes:**
+    - Document parsing errors
+    - AI misinterpretation
+    - Corrupted files
+    
+    **Solutions:**
+    - Verify document content manually
+    - Re-upload problematic documents
+    - Report discrepancies to support
+    - Use clinical judgment to override AI
+  </Accordion>
+</AccordionGroup>
+
+## Privacy and Security
+
+Your case insights are protected:
+
+- Only you can view your cases and insights
+- All data transmission is encrypted
+- Insights are stored securely in Supabase
+- Access logs are maintained for auditing
+- HIPAA compliance measures in place
+
+<Warning>
+  Never share your account credentials. Use the built-in sharing features (when available) to collaborate with colleagues.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Understand SOAP Notes" icon="notes-medical" href="/features/soap-notes">
+    Deep dive into how AI generates SOAP notes
+  </Card>
+  
+  <Card title="Learn About Diagnosis Support" icon="stethoscope" href="/features/diagnosis-support">
+    Explore how AI suggests diagnoses with ICD codes
+  </Card>
+  
+  <Card title="AI Agents Overview" icon="robot" href="/ai-agents/overview">
+    Learn about the AI agents powering insights
+  </Card>
+  
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Access insights programmatically via API
+  </Card>
+</CardGroup>
+
+<Tip>
+  Pro tip: Use keyboard shortcuts to navigate between sections quickly. The case details page is fully keyboard-accessible!
+</Tip>

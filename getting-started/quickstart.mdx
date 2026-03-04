@@ -1,0 +1,312 @@
+---
+title: 'Quickstart'
+description: 'Get up and running with MedMitra in minutes'
+icon: 'rocket'
+---
+
+## Welcome to MedMitra
+
+MedMitra is an AI-powered medical case management system that helps healthcare professionals analyze patient data, process medical documents, and generate comprehensive clinical insights. This quickstart guide will get you from zero to your first working case in minutes.
+
+## What You'll Build
+
+By the end of this guide, you'll have:
+- A running MedMitra backend and frontend
+- A configured Supabase database
+- Your first medical case with AI-powered analysis
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node">
+    Version 18.x or 20.x LTS
+  </Card>
+  <Card title="Python" icon="python">
+    Version 3.9 or higher
+  </Card>
+  <Card title="Supabase Account" icon="database">
+    Free account at supabase.com
+  </Card>
+  <Card title="API Keys" icon="key">
+    Groq, LlamaParse, and Gladia
+  </Card>
+</CardGroup>
+
+## Quick Setup
+
+<Steps>
+  <Step title="Clone the Repository">
+    Get the MedMitra source code:
+
+    <CodeGroup>
+    ```bash HTTPS
+    git clone https://github.com/yourusername/medmitra.git
+    cd medmitra
+    ```
+
+    ```bash SSH
+    git clone git@github.com:yourusername/medmitra.git
+    cd medmitra
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Set Up the Backend">
+    Navigate to the backend directory and install dependencies:
+
+    <CodeGroup>
+    ```bash pip
+    cd backend
+    python3 -m venv venv
+    source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
+
+    ```bash uv
+    cd backend
+    uv venv
+    source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
+    uv pip install -r requirements.txt
+    ```
+    </CodeGroup>
+
+    Create a `.env` file in the `backend/` directory:
+
+    ```ini backend/.env
+    SUPABASE_URL="your_supabase_project_url"
+    SUPABASE_SERVICE_ROLE_KEY="your_supabase_service_role_key"
+    GROQ_API_KEY="your_groq_api_key"
+    LLAMAPARSE_API_KEY="your_llamaparse_api_key"
+    ```
+
+    <Tip>
+      Get your Supabase URL and keys from Project Settings → API in your Supabase dashboard.
+    </Tip>
+  </Step>
+
+  <Step title="Set Up the Frontend">
+    In a new terminal, navigate to the frontend directory:
+
+    <CodeGroup>
+    ```bash npm
+    cd frontend
+    npm install
+    ```
+
+    ```bash yarn
+    cd frontend
+    yarn install
+    ```
+
+    ```bash pnpm
+    cd frontend
+    pnpm install
+    ```
+    </CodeGroup>
+
+    Create a `.env.local` file in the `frontend/` directory:
+
+    ```ini frontend/.env.local
+    NEXT_PUBLIC_SUPABASE_URL="your_supabase_project_url"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key"
+    NEXT_PUBLIC_FASTAPI_BACKEND_URL="http://localhost:8000"
+    NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key"
+    ```
+  </Step>
+
+  <Step title="Configure Supabase Database">
+    Create the following tables in your Supabase project:
+
+    **Cases Table:**
+    ```sql
+    CREATE TABLE cases (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id UUID NOT NULL,
+      patient_name TEXT NOT NULL,
+      patient_age INTEGER NOT NULL,
+      patient_gender TEXT NOT NULL,
+      case_summary TEXT,
+      status TEXT DEFAULT 'pending',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    ```
+
+    **Case Files Table:**
+    ```sql
+    CREATE TABLE case_files (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+      file_name TEXT NOT NULL,
+      file_type TEXT NOT NULL,
+      file_url TEXT NOT NULL,
+      file_category TEXT NOT NULL,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    ```
+
+    **AI Insights Table:**
+    ```sql
+    CREATE TABLE ai_insights (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
+      case_summary JSONB,
+      soap_note JSONB,
+      primary_diagnosis JSONB,
+      confidence_score FLOAT,
+      status TEXT DEFAULT 'pending',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+    ```
+
+    <Tip>
+      You can run these queries in the SQL Editor in your Supabase dashboard.
+    </Tip>
+  </Step>
+
+  <Step title="Start the Servers">
+    **Backend:** In the backend directory with the virtual environment activated:
+
+    ```bash
+    uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+    ```
+
+    The backend API will be available at `http://localhost:8000`
+
+    **Frontend:** In a new terminal, from the frontend directory:
+
+    <CodeGroup>
+    ```bash npm
+    npm run dev
+    ```
+
+    ```bash yarn
+    yarn dev
+    ```
+
+    ```bash pnpm
+    pnpm dev
+    ```
+    </CodeGroup>
+
+    The frontend will be available at `http://localhost:3000`
+  </Step>
+
+  <Step title="Create Your First Case">
+    1. Open your browser and navigate to `http://localhost:3000`
+    2. Sign up or log in using the Supabase authentication
+    3. Click "New Case" to create your first patient case
+    4. Fill in patient information:
+       - Patient Name
+       - Age
+       - Gender
+       - Initial case notes
+    5. Upload medical documents:
+       - Lab reports (PDF format)
+       - Radiology images (JPG, PNG)
+    6. Click "Create Case" and watch the AI analyze the documents
+  </Step>
+</Steps>
+
+## Verify Your Setup
+
+Once both servers are running, verify your setup:
+
+<AccordionGroup>
+  <Accordion title="Backend Health Check">
+    Visit `http://localhost:8000` in your browser. You should see:
+
+    ```json
+    {
+      "message": "MedMitra Backend API is running!"
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="API Documentation">
+    FastAPI provides automatic interactive documentation:
+    - Swagger UI: `http://localhost:8000/docs`
+    - ReDoc: `http://localhost:8000/redoc`
+  </Accordion>
+
+  <Accordion title="Frontend Status">
+    Visit `http://localhost:3000`. You should see the MedMitra login page with:
+    - Supabase authentication form
+    - Modern, responsive UI
+    - Dark/light mode toggle
+  </Accordion>
+</AccordionGroup>
+
+## What Happens During AI Analysis?
+
+When you create a case with documents, MedMitra's AI workflow:
+
+1. **Parses PDF Lab Reports** using LlamaParse to extract structured data
+2. **Analyzes Radiology Images** using Groq's Vision AI (LLaVA model)
+3. **Generates Case Summary** by synthesizing all medical information
+4. **Creates SOAP Note** with Subjective, Objective, Assessment, and Plan sections
+5. **Suggests Primary Diagnosis** with ICD-10 codes and confidence scores
+
+<Note>
+  The AI analysis typically takes 30-60 seconds depending on the number and size of documents uploaded.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Full Installation Guide" icon="book" href="/getting-started/installation">
+    Detailed setup instructions for production environments
+  </Card>
+  <Card title="Configuration Reference" icon="gear" href="/getting-started/configuration">
+    Complete guide to all environment variables and settings
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore all available API endpoints
+  </Card>
+  <Card title="AI Workflow" icon="sitemap" href="/ai-agents/workflow">
+    Learn about MedMitra's AI-powered workflow
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Backend Won't Start">
+    - Verify Python version: `python3 --version` (should be 3.9+)
+    - Check if port 8000 is available: `lsof -i :8000`
+    - Ensure all environment variables are set in `.env`
+    - Verify virtual environment is activated
+  </Accordion>
+
+  <Accordion title="Frontend Build Errors">
+    - Verify Node.js version: `node --version` (should be 18.x or 20.x)
+    - Clear node_modules and reinstall: `rm -rf node_modules package-lock.json && npm install`
+    - Check if `.env.local` file exists and has correct values
+  </Accordion>
+
+  <Accordion title="Supabase Connection Issues">
+    - Verify Supabase URL format: `https://your-project.supabase.co`
+    - Check that API keys are copied correctly (no extra spaces)
+    - Ensure database tables are created with the exact schema
+    - Verify RLS (Row Level Security) policies if authentication fails
+  </Accordion>
+
+  <Accordion title="AI Analysis Not Working">
+    - Verify Groq API key is valid and has available credits
+    - Check LlamaParse API key is active
+    - Review backend logs for error messages: check terminal output
+    - Ensure uploaded files are in supported formats (PDF for labs, JPG/PNG for radiology)
+  </Accordion>
+</AccordionGroup>
+
+## Getting Help
+
+If you encounter issues:
+
+- Check the [Installation Guide](/getting-started/installation) for detailed setup steps
+- Review [Configuration](/getting-started/configuration) for environment variable reference
+- Visit the GitHub repository for issue tracking and discussions
+- Check API logs in the terminal for detailed error messages

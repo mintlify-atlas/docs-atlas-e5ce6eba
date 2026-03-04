@@ -1,0 +1,755 @@
+---
+title: 'Installation'
+description: 'Complete installation guide for MedMitra'
+icon: 'download'
+---
+
+## Overview
+
+This guide covers the complete installation process for MedMitra, including development and production environments. MedMitra consists of two main components:
+
+- **Backend**: FastAPI-based Python application with AI agents
+- **Frontend**: Next.js 14 application with TypeScript and Tailwind CSS
+
+## System Requirements
+
+### Hardware Requirements
+
+<CardGroup cols={2}>
+  <Card title="Development" icon="laptop">
+    - 4GB RAM minimum
+    - 2 CPU cores
+    - 5GB free disk space
+  </Card>
+  <Card title="Production" icon="server">
+    - 8GB RAM recommended
+    - 4 CPU cores
+    - 20GB free disk space
+  </Card>
+</CardGroup>
+
+### Software Requirements
+
+<Tabs>
+  <Tab title="Required">
+    - **Node.js**: 18.x or 20.x LTS
+    - **Python**: 3.9, 3.10, 3.11, or 3.13+
+    - **npm** / **yarn** / **pnpm**: Latest stable version
+    - **pip**: Python package manager (included with Python)
+    - **Git**: For cloning the repository
+  </Tab>
+  <Tab title="Recommended">
+    - **Docker**: For containerized deployment
+    - **uv**: Fast Python package installer
+    - **PostgreSQL**: For local database development
+    - **Redis**: For caching (future feature)
+  </Tab>
+</Tabs>
+
+## Backend Installation
+
+### Step 1: Clone the Repository
+
+<CodeGroup>
+```bash HTTPS
+git clone https://github.com/yourusername/medmitra.git
+cd medmitra/backend
+```
+
+```bash SSH
+git clone git@github.com:yourusername/medmitra.git
+cd medmitra/backend
+```
+</CodeGroup>
+
+### Step 2: Set Up Python Environment
+
+<Tabs>
+  <Tab title="Using venv (Standard)">
+    Create and activate a virtual environment:
+
+    ```bash macOS/Linux
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
+
+    ```bash Windows
+    python -m venv venv
+    .\venv\Scripts\activate
+    ```
+
+    <Note>
+      Your terminal prompt should change to show `(venv)` when activated.
+    </Note>
+  </Tab>
+
+  <Tab title="Using uv (Fast)">
+    [uv](https://github.com/astral-sh/uv) is a faster alternative to pip:
+
+    ```bash Install uv
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
+
+    ```bash Create Environment
+    uv venv
+    source .venv/bin/activate  # macOS/Linux
+    # or
+    .venv\Scripts\activate     # Windows
+    ```
+  </Tab>
+</Tabs>
+
+### Step 3: Install Python Dependencies
+
+<CodeGroup>
+```bash pip
+pip install -r requirements.txt
+```
+
+```bash uv (faster)
+uv pip install -r requirements.txt
+```
+</CodeGroup>
+
+The following major packages will be installed:
+
+<AccordionGroup>
+  <Accordion title="Core Framework">
+    - `fastapi==0.115.13` - Web framework
+    - `uvicorn==0.34.3` - ASGI server
+    - `pydantic==2.11.7` - Data validation
+    - `python-multipart==0.0.20` - File upload support
+  </Accordion>
+
+  <Accordion title="AI & ML">
+    - `langchain-core==0.3.66` - LLM framework
+    - `langgraph==0.4.10` - Workflow orchestration
+    - `langchain-groq==0.3.4` - Groq LLM integration
+    - `llama-cloud==0.1.29` - LlamaParse document parsing
+    - `groq==0.29.0` - Groq API client
+  </Accordion>
+
+  <Accordion title="Database & Storage">
+    - `supabase==2.16.0` - Supabase client
+    - `postgrest==1.1.1` - PostgreSQL REST client
+    - `storage3==0.12.0` - File storage
+  </Accordion>
+
+  <Accordion title="Utilities">
+    - `python-dotenv==1.0.1` - Environment variable management
+    - `aiofiles==24.1.0` - Async file operations
+    - `requests==2.32.3` - HTTP library
+  </Accordion>
+</AccordionGroup>
+
+### Step 4: Configure Environment Variables
+
+Create a `.env` file in the `backend/` directory:
+
+```bash
+touch .env
+```
+
+Add the following configuration (see [Configuration](/getting-started/configuration) for details):
+
+```ini backend/.env
+# Supabase Configuration
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="your_service_role_key_here"
+
+# AI Service Keys
+GROQ_API_KEY="your_groq_api_key_here"
+LLAMAPARSE_API_KEY="your_llamaparse_api_key_here"
+
+# Optional: Vector Database (for future features)
+# WEAVIATE_API_KEY="your_weaviate_api_key"
+# WEAVIATE_REST_URL="your_weaviate_url"
+```
+
+<Warning>
+  Never commit the `.env` file to version control. It's already included in `.gitignore`.
+</Warning>
+
+### Step 5: Verify Backend Installation
+
+Start the development server:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+You should see output similar to:
+
+```bash
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [12345] using StatReload
+INFO:     Started server process [12346]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+```
+
+Test the API:
+
+<CodeGroup>
+```bash curl
+curl http://localhost:8000/
+```
+
+```bash Browser
+# Visit http://localhost:8000 in your browser
+```
+</CodeGroup>
+
+Expected response:
+```json
+{
+  "message": "MedMitra Backend API is running!"
+}
+```
+
+<Tip>
+  Visit `http://localhost:8000/docs` to see the interactive API documentation powered by Swagger UI.
+</Tip>
+
+## Frontend Installation
+
+### Step 1: Navigate to Frontend Directory
+
+```bash
+cd ../frontend  # From backend directory
+# or
+cd medmitra/frontend  # From project root
+```
+
+### Step 2: Install Node.js Dependencies
+
+<CodeGroup>
+```bash npm
+npm install
+```
+
+```bash yarn
+yarn install
+```
+
+```bash pnpm
+pnpm install
+```
+</CodeGroup>
+
+<Note>
+  Installation may take 2-5 minutes depending on your internet connection.
+</Note>
+
+The following major packages will be installed:
+
+<AccordionGroup>
+  <Accordion title="Core Framework">
+    - `next@latest` - React framework with Turbopack
+    - `react@19.0.0` - UI library
+    - `typescript@5.7.2` - Type safety
+  </Accordion>
+
+  <Accordion title="UI Components">
+    - `@radix-ui/react-*` - Accessible component primitives
+    - `lucide-react@0.468.0` - Icon library
+    - `tailwindcss@3.4.17` - Utility-first CSS
+    - `next-themes@0.4.3` - Dark mode support
+  </Accordion>
+
+  <Accordion title="Backend Integration">
+    - `@supabase/supabase-js@latest` - Supabase client
+    - `@supabase/ssr@latest` - Server-side rendering support
+  </Accordion>
+
+  <Accordion title="Utilities">
+    - `class-variance-authority@0.7.0` - CSS variant utilities
+    - `clsx@2.1.1` - Conditional classnames
+    - `tailwind-merge@2.5.2` - Merge Tailwind classes
+  </Accordion>
+</AccordionGroup>
+
+### Step 3: Configure Environment Variables
+
+Create a `.env.local` file in the `frontend/` directory:
+
+```bash
+touch .env.local
+```
+
+Add the following configuration:
+
+```ini frontend/.env.local
+# Supabase Configuration (Client-side)
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key_here"
+
+# Backend API URL
+NEXT_PUBLIC_FASTAPI_BACKEND_URL="http://localhost:8000"
+
+# Gladia Speech-to-Text API
+NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key_here"
+```
+
+<Info>
+  In production, update `NEXT_PUBLIC_FASTAPI_BACKEND_URL` to your deployed backend URL.
+</Info>
+
+### Step 4: Verify Frontend Installation
+
+Start the development server:
+
+<CodeGroup>
+```bash npm
+npm run dev
+```
+
+```bash yarn
+yarn dev
+```
+
+```bash pnpm
+pnpm dev
+```
+</CodeGroup>
+
+You should see:
+
+```bash
+  ▲ Next.js 15.x
+  - Local:        http://localhost:3000
+  - Experiments:  turbopack
+
+ ✓ Starting...
+ ✓ Ready in 1.5s
+```
+
+<Tip>
+  The frontend uses **Turbopack** for ultra-fast development builds and hot module replacement.
+</Tip>
+
+Open `http://localhost:3000` in your browser to see the MedMitra login page.
+
+## Database Setup
+
+MedMitra uses Supabase (PostgreSQL) for data storage. You need to create the required database schema.
+
+### Step 1: Create Supabase Project
+
+1. Visit [supabase.com](https://supabase.com) and sign in
+2. Click "New Project"
+3. Choose a project name, database password, and region
+4. Wait for the project to be provisioned (1-2 minutes)
+
+### Step 2: Get API Credentials
+
+<Steps>
+  <Step title="Navigate to Project Settings">
+    In your Supabase dashboard, go to **Settings** → **API**
+  </Step>
+
+  <Step title="Copy Project URL">
+    Copy the **Project URL** (e.g., `https://xyz.supabase.co`)
+  </Step>
+
+  <Step title="Copy API Keys">
+    Copy both:
+    - **anon public** key (for frontend)
+    - **service_role** key (for backend)
+
+    <Warning>
+      Keep the service_role key secret! It bypasses Row Level Security.
+    </Warning>
+  </Step>
+</Steps>
+
+### Step 3: Create Database Tables
+
+Go to **SQL Editor** in your Supabase dashboard and run the following:
+
+<Tabs>
+  <Tab title="Cases Table">
+    ```sql
+    CREATE TABLE cases (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id UUID NOT NULL,
+      patient_name TEXT NOT NULL,
+      patient_age INTEGER NOT NULL CHECK (patient_age > 0 AND patient_age < 150),
+      patient_gender TEXT NOT NULL,
+      case_summary TEXT,
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create index for faster queries
+    CREATE INDEX idx_cases_user_id ON cases(user_id);
+    CREATE INDEX idx_cases_status ON cases(status);
+    CREATE INDEX idx_cases_created_at ON cases(created_at DESC);
+    ```
+  </Tab>
+
+  <Tab title="Case Files Table">
+    ```sql
+    CREATE TABLE case_files (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      file_name TEXT NOT NULL,
+      file_type TEXT NOT NULL,
+      file_url TEXT NOT NULL,
+      file_category TEXT NOT NULL CHECK (file_category IN ('lab', 'radiology')),
+      parsed_content TEXT,
+      analysis_result JSONB,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    -- Create index for faster queries
+    CREATE INDEX idx_case_files_case_id ON case_files(case_id);
+    CREATE INDEX idx_case_files_category ON case_files(file_category);
+    ```
+  </Tab>
+
+  <Tab title="AI Insights Table">
+    ```sql
+    CREATE TABLE ai_insights (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      case_summary JSONB,
+      soap_note JSONB,
+      primary_diagnosis JSONB,
+      confidence_score FLOAT CHECK (confidence_score >= 0 AND confidence_score <= 1),
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+      error_message TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(case_id)
+    );
+
+    -- Create index for faster queries
+    CREATE INDEX idx_ai_insights_case_id ON ai_insights(case_id);
+    CREATE INDEX idx_ai_insights_status ON ai_insights(status);
+    ```
+  </Tab>
+
+  <Tab title="All Tables (Complete)">
+    ```sql
+    -- Create all tables at once
+    
+    -- Cases table
+    CREATE TABLE cases (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      user_id UUID NOT NULL,
+      patient_name TEXT NOT NULL,
+      patient_age INTEGER NOT NULL CHECK (patient_age > 0 AND patient_age < 150),
+      patient_gender TEXT NOT NULL,
+      case_summary TEXT,
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE INDEX idx_cases_user_id ON cases(user_id);
+    CREATE INDEX idx_cases_status ON cases(status);
+    CREATE INDEX idx_cases_created_at ON cases(created_at DESC);
+
+    -- Case files table
+    CREATE TABLE case_files (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      file_name TEXT NOT NULL,
+      file_type TEXT NOT NULL,
+      file_url TEXT NOT NULL,
+      file_category TEXT NOT NULL CHECK (file_category IN ('lab', 'radiology')),
+      parsed_content TEXT,
+      analysis_result JSONB,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE INDEX idx_case_files_case_id ON case_files(case_id);
+    CREATE INDEX idx_case_files_category ON case_files(file_category);
+
+    -- AI insights table
+    CREATE TABLE ai_insights (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      case_id UUID NOT NULL REFERENCES cases(id) ON DELETE CASCADE,
+      case_summary JSONB,
+      soap_note JSONB,
+      primary_diagnosis JSONB,
+      confidence_score FLOAT CHECK (confidence_score >= 0 AND confidence_score <= 1),
+      status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+      error_message TEXT,
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      UNIQUE(case_id)
+    );
+
+    CREATE INDEX idx_ai_insights_case_id ON ai_insights(case_id);
+    CREATE INDEX idx_ai_insights_status ON ai_insights(status);
+    ```
+  </Tab>
+</Tabs>
+
+### Step 4: Configure Storage Buckets
+
+MedMitra uses Supabase Storage for file uploads:
+
+<Steps>
+  <Step title="Navigate to Storage">
+    In Supabase dashboard, go to **Storage** → **Buckets**
+  </Step>
+
+  <Step title="Create Buckets">
+    Create two public buckets:
+    - `medical-documents` (for lab reports and radiology images)
+    - `avatars` (optional, for user profile pictures)
+
+    <Tip>
+      Make sure to enable "Public bucket" if you want direct URL access to files.
+    </Tip>
+  </Step>
+
+  <Step title="Configure Bucket Policies">
+    Set appropriate storage policies for file upload/download permissions.
+  </Step>
+</Steps>
+
+## Obtaining API Keys
+
+MedMitra requires several third-party API keys:
+
+### Groq API Key
+
+<Steps>
+  <Step title="Sign Up">
+    Visit [console.groq.com](https://console.groq.com) and create an account
+  </Step>
+  <Step title="Generate Key">
+    Go to **API Keys** section and click **Create API Key**
+  </Step>
+  <Step title="Copy Key">
+    Copy the generated key and add it to your `.env` file
+  </Step>
+</Steps>
+
+<Info>
+  Groq provides free tier access to Llama 3.3 models with generous rate limits.
+</Info>
+
+### LlamaParse API Key
+
+<Steps>
+  <Step title="Sign Up">
+    Visit [cloud.llamaindex.ai](https://cloud.llamaindex.ai) and create an account
+  </Step>
+  <Step title="Navigate to API Keys">
+    Go to your account settings and find the API Keys section
+  </Step>
+  <Step title="Generate Key">
+    Create a new API key for LlamaParse
+  </Step>
+</Steps>
+
+### Gladia API Key
+
+<Steps>
+  <Step title="Sign Up">
+    Visit [gladia.io](https://gladia.io) and create an account
+  </Step>
+  <Step title="Access Dashboard">
+    Navigate to your dashboard after email verification
+  </Step>
+  <Step title="Generate Key">
+    Find the API Keys section and generate a new key
+  </Step>
+</Steps>
+
+<Note>
+  Gladia is used for speech-to-text transcription in the frontend for doctor's notes.
+</Note>
+
+## Running in Production
+
+### Backend Deployment
+
+For production deployment, use a production-grade ASGI server configuration:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+<Tip>
+  The backend can be deployed to:
+  - [Koyeb](https://koyeb.com) (recommended, supports Docker)
+  - [Railway](https://railway.app)
+  - [Render](https://render.com)
+  - Any VPS with Python support
+</Tip>
+
+### Frontend Deployment
+
+Build the production bundle:
+
+<CodeGroup>
+```bash npm
+npm run build
+npm run start
+```
+
+```bash yarn
+yarn build
+yarn start
+```
+</CodeGroup>
+
+<Tip>
+  The frontend can be deployed to:
+  - [Vercel](https://vercel.com) (recommended for Next.js)
+  - [Netlify](https://netlify.com)
+  - [Cloudflare Pages](https://pages.cloudflare.com)
+</Tip>
+
+## Docker Installation (Optional)
+
+For containerized deployment, Docker configurations can be added:
+
+<CodeGroup>
+```dockerfile Backend Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+```dockerfile Frontend Dockerfile
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
+```
+</CodeGroup>
+
+## Verification Checklist
+
+After installation, verify everything is working:
+
+<Steps>
+  <Step title="Backend Health">
+    - [ ] Backend starts without errors
+    - [ ] API documentation accessible at `/docs`
+    - [ ] Root endpoint returns success message
+    - [ ] Environment variables loaded correctly
+  </Step>
+
+  <Step title="Frontend Health">
+    - [ ] Frontend starts without errors
+    - [ ] Login page displays correctly
+    - [ ] Dark/light mode toggle works
+    - [ ] No console errors in browser
+  </Step>
+
+  <Step title="Database Connection">
+    - [ ] Supabase tables created successfully
+    - [ ] Storage buckets configured
+    - [ ] Authentication works (sign up/login)
+  </Step>
+
+  <Step title="API Integration">
+    - [ ] Groq API key valid
+    - [ ] LlamaParse API key valid
+    - [ ] Gladia API key valid (optional)
+    - [ ] Backend can connect to Supabase
+  </Step>
+</Steps>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configuration Guide" icon="gear" href="/getting-started/configuration">
+    Learn about all available configuration options
+  </Card>
+  <Card title="Create Your First Case" icon="file-medical" href="/guides/creating-cases">
+    Step-by-step guide to creating and analyzing cases
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore the complete API documentation
+  </Card>
+  <Card title="AI Agents" icon="sitemap" href="/ai-agents/overview">
+    Understand MedMitra's AI workflow
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Python ModuleNotFoundError">
+    If you see `ModuleNotFoundError` when starting the backend:
+
+    1. Verify virtual environment is activated: `which python` should show the venv path
+    2. Reinstall dependencies: `pip install -r requirements.txt`
+    3. Check Python version: `python --version` (should be 3.9+)
+  </Accordion>
+
+  <Accordion title="Port Already in Use">
+    If port 8000 or 3000 is already in use:
+
+    **Backend:**
+    ```bash
+    # Find process using port 8000
+    lsof -i :8000
+    # Kill the process
+    kill -9 <PID>
+    # Or use a different port
+    uvicorn app:app --port 8001
+    ```
+
+    **Frontend:**
+    ```bash
+    # Next.js will automatically try port 3001 if 3000 is busy
+    # Or specify a port:
+    PORT=3001 npm run dev
+    ```
+  </Accordion>
+
+  <Accordion title="Supabase Connection Failed">
+    If you can't connect to Supabase:
+
+    1. Verify URL format: should be `https://xyz.supabase.co`
+    2. Check API keys have no extra spaces or quotes
+    3. Ensure project is not paused (free tier auto-pauses after 1 week)
+    4. Test connection in Supabase SQL Editor first
+  </Accordion>
+
+  <Accordion title="NPM Installation Errors">
+    If npm install fails:
+
+    1. Clear npm cache: `npm cache clean --force`
+    2. Delete node_modules and package-lock.json: `rm -rf node_modules package-lock.json`
+    3. Update npm: `npm install -g npm@latest`
+    4. Try using yarn or pnpm instead
+  </Accordion>
+</AccordionGroup>

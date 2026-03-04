@@ -1,0 +1,84 @@
+---
+title: "Delete Case"
+api: "DELETE /cases/cases/{case_id}"
+description: "Permanently delete a medical case and all associated data"
+---
+
+## Authentication
+
+This endpoint requires authentication. The user_id is automatically retrieved from the authenticated session.
+
+## Path Parameters
+
+<ParamField path="case_id" type="integer" required>
+  The unique identifier of the case to delete
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message confirming the deletion
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X DELETE "https://api.medmitra.com/cases/cases/12345" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+## Example Response
+
+```json
+{
+  "message": "Case deleted successfully"
+}
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found" type="error">
+  Case with the specified ID was not found or does not belong to the user
+  
+  ```json
+  {
+    "detail": "Case not found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="400 Bad Request" type="error">
+  Invalid request or Supabase client error
+  
+  ```json
+  {
+    "detail": "Error message describing the issue"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error" type="error">
+  Server error during deletion operation
+  
+  ```json
+  {
+    "detail": "Internal server error: {error details}"
+  }
+  ```
+</ResponseField>
+
+## Notes
+
+- This operation is **permanent** and cannot be undone
+- Deleting a case will also delete:
+  - All associated file records
+  - All AI-generated insights
+  - All related metadata
+- You must be the owner of the case (user_id must match) to delete it
+- Files stored in cloud storage may require separate cleanup
+
+## Warning
+
+<Warning>
+  This is a destructive operation. Ensure you have proper backups or export important data before deleting a case.
+</Warning>

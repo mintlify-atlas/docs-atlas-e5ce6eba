@@ -1,0 +1,345 @@
+---
+title: 'Document Processing'
+description: 'Automated extraction and analysis of medical documents'
+icon: 'file-lines'
+---
+
+## Overview
+
+MedMitra automatically processes uploaded medical documents to extract relevant clinical information. The system handles both text-based laboratory reports and medical imaging files through specialized processing pipelines.
+
+## Processing Pipeline
+
+<Steps>
+  <Step title="File Upload">
+    Documents are uploaded during case creation and stored in secure cloud storage
+  </Step>
+  <Step title="Background Processing">
+    Files are queued for asynchronous processing without blocking the API
+  </Step>
+  <Step title="Content Extraction">
+    Text is extracted from PDFs, images are analyzed with vision AI
+  </Step>
+  <Step title="Metadata Storage">
+    Extracted data is stored with the file record for AI analysis
+  </Step>
+</Steps>
+
+## Lab Document Processing
+
+Laboratory reports undergo text extraction and structured data parsing.
+
+### Supported Formats
+
+- **PDF Reports**: Text-based laboratory results
+- **Digital Reports**: Electronically generated lab results
+
+<Warning>
+Scanned PDF images require OCR processing. For best results, upload native digital PDFs.
+</Warning>
+
+### Extraction Process
+
+Lab files are processed asynchronously:
+
+```python
+# Process each lab file
+for lab_file in lab_files:
+    file_content = lab_file.get('file_content')
+    
+    # Save to temporary file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+        temp_file.write(file_content)
+        temp_file_path = temp_file.name
+    
+    # Extract text from PDF
+    result = await process_pdf_async(temp_file_path)
+    
+    if result.get('status') == 'success':
+        # Store extracted text with file metadata
+        await supabase.update_case_file_metadata(
+            file_id=file_id, 
+            metadata={"text_data": result.get('text', '')}
+        )
+```
+
+Source: `backend/agentic.py:37-67`
+
+### Extracted Information
+
+The text extraction captures:
+
+- **Lab Values**: Quantitative test results (CBC, metabolic panel, etc.)
+- **Reference Ranges**: Normal value ranges for comparison
+- **Test Dates**: When specimens were collected and analyzed
+- **Provider Notes**: Comments from laboratory staff
+- **Flags**: Abnormal results and critical values
+
+### Data Structure
+
+```python
+class ProcessedFile(BaseModel):
+    file_id: str
+    file_name: str
+    file_type: str
+    file_category: Literal["lab", "radiology"]
+    text_data: Optional[str] = None  # Extracted text
+    ai_summary: Optional[str] = None # AI-generated summary
+```
+
+Source: `backend/models/data_models.py:14-20`
+
+## Radiology File Processing
+
+Medical images are analyzed using advanced vision AI to extract clinical findings.
+
+### Supported Image Types
+
+<CardGroup cols={2}>
+  <Card title="X-Rays" icon="x-ray">
+    Chest, skeletal, and abdominal radiographs
+  </Card>
+  <Card title="CT Scans" icon="brain">
+    Cross-sectional imaging studies
+  </Card>
+  <Card title="MRI" icon="magnet">
+    Magnetic resonance imaging
+  </Card>
+  <Card title="Ultrasound" icon="waveform-lines">
+    Sonographic images
+  </Card>
+</CardGroup>
+
+### Vision AI Analysis
+
+Radiology files are processed through a specialized vision agent:
+
+```python
+async def vision_agent(case_id: str):
+    """Process radiology images with vision AI"""
+    
+    # Retrieve all case files
+    results = await supabase.get_case_files(case_id=case_id)
+    mapping = {}
+    
+    for result in results:
+        file_id = result.get("file_id")
+        file_url = result.get("file_url")
+        file_category = result.get("file_category")
+        
+        if file_category == "radiology":
+            # Extract findings from image
+            ai_summary = await image_extraction(file_url)
+            
+            # Store AI summary with file
+            await supabase.update_case_file_metadata(
+                file_id=file_id, 
+                metadata={"ai_summary": ai_summary}
+            )
+    
+    return True
+```
+
+Source: `backend/agents/vision_agent.py:57-89`
+
+### Image Analysis Details
+
+The vision AI extracts:
+
+- **Anatomical Findings**: Visible structures and abnormalities
+- **Pathological Indicators**: Signs of disease or injury
+- **Comparative Analysis**: Changes from previous studies
+- **Technical Quality**: Image quality assessment
+
+### Vision Model
+
+MedMitra uses the Llama-4 Scout vision model:
+
+```python
+completion = client.chat.completions.create(
+    model="meta-llama/llama-4-scout-17b-16e-instruct",
+    messages=[{
+        "role": "user",
+        "content": [
+            {"type": "text", "text": RADIOLOGY_ANALYSIS_PROMPT},
+            {"type": "image_url", "image_url": {"url": image_url}}
+        ]
+    }],
+    temperature=1,
+    max_completion_tokens=1024
+)
+```
+
+Source: `backend/agents/vision_agent.py:27-51`
+
+## Processing Workflow
+
+The complete document processing workflow:
+
+<CodeGroup>
+```python agentic_process
+async def agentic_process(
+    case_id: str, 
+    user_id: str,
+    patient_name: str,
+    patient_age: int,
+    patient_gender: str,
+    case_summary: Optional[str] = None,
+    lab_files: Optional[List[Dict[str, Any]]] = None,
+    radiology_files: Optional[List[Dict[str, Any]]] = None
+):
+    # Process lab files
+    if lab_files:
+        for lab_file in lab_files:
+            # Extract text from PDF
+            result = await process_pdf_async(temp_file_path)
+            # Store extracted text
+            await supabase.update_case_file_metadata(
+                file_id=file_id, 
+                metadata={"text_data": result.get('text', '')}
+            )
+    
+    # Process radiology files
+    if radiology_files:
+        result = await vision_agent(case_id)
+    
+    # Proceed to AI analysis
+    medical_agent = MedicalInsightsAgent()
+    medical_insights = await medical_agent.process(case_input)
+```
+</CodeGroup>
+
+Source: `backend/agentic.py:16-124`
+
+## Data Models
+
+### Lab Document Model
+
+```python
+class LabDocument(BaseModel):
+    file_id: str
+    file_name: str
+    extracted_text: str
+    lab_values: Optional[Dict[str, Any]] = None
+    summary: Optional[str] = None
+```
+
+### Radiology Document Model
+
+```python
+class RadiologyDocument(BaseModel):
+    file_id: str
+    file_name: str
+    summary: Optional[str] = None
+
+class RadiologyImage(BaseModel):
+    file_id: str
+    file_name: str
+    findings: Optional[str] = None
+    impressions: Optional[str] = None
+    summary: Optional[str] = None
+```
+
+Source: `backend/models/data_models.py:22-39`
+
+## Error Handling
+
+The system handles various processing errors:
+
+<AccordionGroup>
+  <Accordion title="PDF Processing Errors">
+    - Corrupted or password-protected files
+    - Unsupported PDF versions
+    - Scanned images requiring OCR
+    
+    Files that fail processing are logged and case status is updated accordingly.
+  </Accordion>
+  
+  <Accordion title="Image Analysis Errors">
+    - Unsupported image formats
+    - Low-resolution or unclear images
+    - Network errors during vision API calls
+    
+    Failed image analyses are retried with exponential backoff.
+  </Accordion>
+  
+  <Accordion title="Storage Errors">
+    - Upload failures
+    - Insufficient storage quota
+    - Network timeouts
+    
+    The system rolls back case creation if file storage fails.
+  </Accordion>
+</AccordionGroup>
+
+## Processing Status
+
+Track document processing status:
+
+```python
+# Check file processing status
+GET /cases/cases/{case_id}
+
+Response:
+{
+  "case": {...},
+  "files": [
+    {
+      "file_id": "123",
+      "file_name": "blood_test.pdf",
+      "text_data": "Extracted text here...",
+      "status": "processed"
+    },
+    {
+      "file_id": "456",
+      "file_name": "chest_xray.jpg",
+      "ai_summary": "{findings: ...}",
+      "status": "processed"
+    }
+  ]
+}
+```
+
+## Performance Optimization
+
+<CardGroup cols={2}>
+  <Card title="Async Processing" icon="clock">
+    All document processing runs asynchronously to avoid blocking API responses
+  </Card>
+  <Card title="Batch Processing" icon="layer-group">
+    Multiple files are processed in parallel when possible
+  </Card>
+  <Card title="Temporary Files" icon="file-circle-xmark">
+    Temp files are cleaned up immediately after processing
+  </Card>
+  <Card title="Efficient Storage" icon="database">
+    Only metadata and extracted text stored in database
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Tip>
+**For Lab Reports:**
+- Upload native digital PDFs when available
+- Ensure text is selectable in the PDF
+- Use standard laboratory report formats
+</Tip>
+
+<Tip>
+**For Radiology Images:**
+- Upload high-resolution images (minimum 512x512)
+- Use standard DICOM or JPEG formats
+- Include all relevant views (PA, lateral, etc.)
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="AI Analysis" icon="microchip" href="/features/ai-analysis">
+    Learn how processed documents are analyzed
+  </Card>
+  <Card title="SOAP Notes" icon="notes-medical" href="/features/soap-notes">
+    Understand SOAP note generation
+  </Card>
+</CardGroup>

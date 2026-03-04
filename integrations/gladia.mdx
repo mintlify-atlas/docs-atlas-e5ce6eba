@@ -1,0 +1,525 @@
+---
+title: 'Gladia Integration'
+description: 'Real-time speech-to-text for medical dictation and note-taking'
+icon: 'microphone'
+---
+
+Gladia provides real-time speech-to-text transcription, enabling doctors to dictate case notes and patient information hands-free.
+
+## Overview
+
+MedMitra uses Gladia for:
+
+- **Real-time Medical Dictation**: Convert speech to text as doctors speak
+- **Case Note Entry**: Transcribe doctor's observations and patient history
+- **Medical Terminology**: Optimized for clinical language
+- **Live Transcription**: Instant feedback with confidence scores
+
+## Why Gladia?
+
+- **Real-time Processing**: WebSocket-based streaming transcription
+- **Medical Accuracy**: Better recognition of medical terms
+- **Low Latency**: Minimal delay between speech and text
+- **Easy Integration**: Simple API and SDK
+
+## Prerequisites
+
+- A Gladia account (sign up at [gladia.io](https://gladia.io))
+- HTTPS for microphone access (required by browsers)
+- Modern web browser with WebRTC support
+
+## Setup Instructions
+
+### 1. Get a Gladia API Key
+
+1. Visit [gladia.io](https://gladia.io)
+2. Sign up for an account
+3. Navigate to your **Dashboard**
+4. Generate an **API Key**
+5. Copy your API key
+
+<Info>
+  Gladia offers a free tier for testing. Check their pricing page for production usage limits.
+</Info>
+
+### 2. Configure Environment Variables
+
+Add to `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key_here"
+```
+
+<Warning>
+  The `NEXT_PUBLIC_` prefix exposes this key to the client. For production, consider using a backend proxy to protect your API key.
+</Warning>
+
+### 3. Restart Development Server
+
+```bash
+npm run dev
+```
+
+## Implementation
+
+### Gladia Service Class
+
+Location: `frontend/lib/gladia.ts`
+
+```typescript
+export class GladiaService {
+  private websocket: WebSocket | null = null;
+  private isConnected = false;
+  private apiKey: string;
+  private config: GladiaConfig;
+
+  constructor(apiKey: string, config: GladiaConfig = {}) {
+    this.apiKey = apiKey;
+    this.config = {
+      encoding: 'wav/pcm',
+      sample_rate: 16000,
+      bit_depth: 16,
+      channels: 1,
+      ...config
+    };
+  }
+
+  async startSession(): Promise<string> {
+    // Create live transcription session
+    const response = await fetch('https://api.gladia.io/v2/live', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Gladia-Key': this.apiKey,
+      },
+      body: JSON.stringify(this.config),
+    });
+
+    const { id, url } = await response.json();
+    
+    // Connect to WebSocket
+    this.websocket = new WebSocket(url);
+    this.websocket.binaryType = 'arraybuffer';
+    
+    return id; // Session ID
+  }
+
+  sendAudio(audioData: ArrayBuffer) {
+    if (this.websocket?.readyState === WebSocket.OPEN) {
+      this.websocket.send(audioData);
+    }
+  }
+
+  endSession() {
+    if (this.websocket) {
+      this.websocket.send(JSON.stringify({ type: 'stop_recording' }));
+      this.websocket.close(1000);
+    }
+  }
+}
+```
+
+### Audio Processing
+
+```typescript
+export class AudioProcessor {
+  private audioContext: AudioContext | null = null;
+  private mediaStream: MediaStream | null = null;
+  private processor: ScriptProcessorNode | null = null;
+
+  async startRecording(onAudioData: (data: ArrayBuffer) => void): Promise<MediaStream> {
+    // Request microphone access
+    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        sampleRate: 16000,
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      }
+    });
+
+    // Create audio context
+    this.audioContext = new AudioContext({ sampleRate: 16000 });
+    this.source = this.audioContext.createMediaStreamSource(this.mediaStream);
+    this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+
+    // Process audio data
+    this.processor.onaudioprocess = (event) => {
+      const audioData = event.inputBuffer.getChannelData(0);
+      
+      // Convert Float32Array to Int16Array (PCM 16-bit)
+      const pcmData = new Int16Array(audioData.length);
+      for (let i = 0; i < audioData.length; i++) {
+        pcmData[i] = Math.max(-32768, Math.min(32767, audioData[i] * 32768));
+      }
+
+      onAudioData(pcmData.buffer);
+    };
+
+    // Connect audio processing chain
+    this.source.connect(this.processor);
+    this.processor.connect(this.audioContext.destination);
+
+    return this.mediaStream;
+  }
+
+  stopRecording() {
+    // Cleanup audio resources
+    this.processor?.disconnect();
+    this.source?.disconnect();
+    this.audioContext?.close();
+    this.mediaStream?.getTracks().forEach(track => track.stop());
+  }
+}
+```
+
+### React Hook
+
+Location: `frontend/hooks/use-gladia-stt.ts`
+
+```typescript
+import { GladiaService, AudioProcessor } from '@/lib/gladia';
+
+export function useGladiaSTT({
+  apiKey,
+  config,
+  onTranscript,
+  onError
+}: UseGladiaSTTOptions) {
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const gladiaServiceRef = useRef<GladiaService | null>(null);
+  const audioProcessorRef = useRef<AudioProcessor | null>(null);
+
+  const startRecording = async () => {
+    try {
+      setIsConnecting(true);
+
+      // Initialize Gladia service
+      gladiaServiceRef.current = new GladiaService(apiKey, config);
+      const sessionId = await gladiaServiceRef.current.startSession();
+
+      // Set up message handler
+      gladiaServiceRef.current.onMessage((message) => {
+        if (message.type === 'transcript') {
+          const text = message.data.utterance.text;
+          setTranscript(prev => prev + ' ' + text);
+          onTranscript?.(text, message.data.is_final);
+        }
+      });
+
+      // Start audio recording
+      audioProcessorRef.current = new AudioProcessor();
+      await audioProcessorRef.current.startRecording((audioData) => {
+        gladiaServiceRef.current?.sendAudio(audioData);
+      });
+
+      setIsRecording(true);
+      setIsConnecting(false);
+    } catch (error) {
+      onError?.(error as Error);
+      setIsConnecting(false);
+    }
+  };
+
+  const stopRecording = () => {
+    audioProcessorRef.current?.stopRecording();
+    setIsRecording(false);
+  };
+
+  const endSession = () => {
+    gladiaServiceRef.current?.endSession();
+    gladiaServiceRef.current = null;
+    setTranscript('');
+  };
+
+  return {
+    isRecording,
+    isConnecting,
+    transcript,
+    startRecording,
+    stopRecording,
+    endSession,
+  };
+}
+```
+
+## Usage Example
+
+In the case creation form:
+
+```typescript
+import { useGladiaSTT } from '@/hooks/use-gladia-stt';
+
+function CaseSummaryForm() {
+  const [caseNotes, setCaseNotes] = useState('');
+  const gladiaApiKey = process.env.NEXT_PUBLIC_GLADIA_API_KEY;
+
+  const {
+    isRecording,
+    isConnecting,
+    transcript,
+    startRecording,
+    stopRecording,
+    endSession,
+  } = useGladiaSTT({
+    apiKey: gladiaApiKey || '',
+    onTranscript: (text, isFinal) => {
+      if (isFinal) {
+        // Add final transcript to case notes
+        setCaseNotes(prev => prev + ' ' + text);
+      }
+    },
+    onError: (error) => {
+      console.error('Transcription error:', error);
+      alert('Failed to start dictation');
+    }
+  });
+
+  return (
+    <div>
+      <textarea
+        value={caseNotes}
+        onChange={(e) => setCaseNotes(e.target.value)}
+        placeholder="Enter case notes or use dictation..."
+      />
+      
+      {!isRecording ? (
+        <button onClick={startRecording} disabled={isConnecting}>
+          {isConnecting ? 'Connecting...' : 'Start Dictation'}
+        </button>
+      ) : (
+        <button onClick={stopRecording}>
+          Stop Recording
+        </button>
+      )}
+
+      {transcript && (
+        <div className="live-transcript">
+          <p>Live: {transcript}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Configuration Options
+
+### Audio Settings
+
+```typescript
+const config: GladiaConfig = {
+  encoding: 'wav/pcm',        // Audio encoding format
+  sample_rate: 16000,         // 16kHz (optimal for speech)
+  bit_depth: 16,              // 16-bit depth
+  channels: 1,                // Mono audio
+};
+```
+
+### Browser Microphone Settings
+
+```typescript
+const constraints = {
+  audio: {
+    sampleRate: 16000,         // Match Gladia config
+    channelCount: 1,           // Mono
+    echoCancellation: true,    // Reduce echo
+    noiseSuppression: true,    // Reduce background noise
+    autoGainControl: true,     // Normalize volume
+  }
+};
+```
+
+## Message Types
+
+### Transcript Message
+
+```typescript
+interface GladiaTranscript {
+  type: 'transcript';
+  session_id: string;
+  created_at: string;
+  data: {
+    id: string;
+    utterance: {
+      text: string;           // Transcribed text
+      start: number;          // Start time
+      end: number;            // End time
+      language: string;       // Detected language
+    };
+    is_final: boolean;        // Is this final or interim?
+    confidence?: number;      // Confidence score
+  };
+}
+```
+
+### Error Message
+
+```typescript
+interface GladiaError {
+  type: 'error';
+  message: string;
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="User Experience">
+    - Show connecting/recording status clearly
+    - Display live transcripts in real-time
+    - Provide visual feedback (mic icon, waveform)
+    - Allow manual corrections to transcripts
+    - Save transcripts automatically
+  </Accordion>
+  
+  <Accordion title="Performance">
+    - Use 16kHz sample rate (optimal for speech)
+    - Enable audio processing (echo cancellation, etc.)
+    - Close sessions when not in use
+    - Implement session timeouts
+    - Monitor WebSocket connection status
+  </Accordion>
+  
+  <Accordion title="Error Handling">
+    - Handle microphone permission denials
+    - Reconnect on WebSocket disconnection
+    - Show user-friendly error messages
+    - Provide fallback to manual typing
+    - Log errors for debugging
+  </Accordion>
+  
+  <Accordion title="Security">
+    - Use HTTPS (required for microphone access)
+    - Consider backend proxy for API key
+    - Implement rate limiting
+    - Monitor API usage and costs
+    - Handle PHI data appropriately
+  </Accordion>
+</AccordionGroup>
+
+## Browser Compatibility
+
+<table>
+  <tr>
+    <th>Browser</th>
+    <th>Support</th>
+    <th>Notes</th>
+  </tr>
+  <tr>
+    <td>Chrome</td>
+    <td>✅ Full</td>
+    <td>Best performance</td>
+  </tr>
+  <tr>
+    <td>Firefox</td>
+    <td>✅ Full</td>
+    <td>Good performance</td>
+  </tr>
+  <tr>
+    <td>Safari</td>
+    <td>✅ Full</td>
+    <td>Requires HTTPS</td>
+  </tr>
+  <tr>
+    <td>Edge</td>
+    <td>✅ Full</td>
+    <td>Chromium-based</td>
+  </tr>
+  <tr>
+    <td>Mobile</td>
+    <td>⚠️ Limited</td>
+    <td>Varies by browser</td>
+  </tr>
+</table>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Microphone Issues">
+    **Error: Microphone access denied**
+    
+    - Check browser permissions
+    - Ensure HTTPS is used
+    - Try different browser
+    - Check system microphone settings
+    - Restart browser if needed
+  </Accordion>
+  
+  <Accordion title="Connection Issues">
+    **Error: Failed to connect to Gladia WebSocket**
+    
+    - Verify API key is correct
+    - Check internet connectivity
+    - Ensure Gladia service is up
+    - Check browser console for errors
+    - Try creating new session
+  </Accordion>
+  
+  <Accordion title="Poor Transcription Quality">
+    **Issue: Inaccurate transcriptions**
+    
+    - Speak clearly and at moderate pace
+    - Reduce background noise
+    - Use quality microphone
+    - Check microphone positioning
+    - Use medical terminology correctly
+  </Accordion>
+  
+  <Accordion title="No Audio Being Sent">
+    **Issue: Transcription not working**
+    
+    - Check WebSocket is connected
+    - Verify audio processor is running
+    - Check audio data is being captured
+    - Test microphone in system settings
+    - Look for JavaScript errors
+  </Accordion>
+</AccordionGroup>
+
+## Cost Management
+
+- **Free Tier**: Limited minutes per month
+- **Paid Plans**: Per-minute pricing
+- **Usage Tracking**: Monitor in Gladia dashboard
+- **Optimization**: End sessions promptly
+
+<Tip>
+  Implement session timeouts to prevent accidentally running sessions from consuming credits.
+</Tip>
+
+## Performance Tips
+
+1. **Microphone Quality**: Use external mic for better accuracy
+2. **Environment**: Quiet room improves recognition
+3. **Speaking Style**: Clear enunciation, moderate pace
+4. **Medical Terms**: Pronounce medical terminology carefully
+5. **Pauses**: Brief pauses help segment sentences
+
+## Security Considerations
+
+<Warning>
+  Gladia processes audio in the cloud. Ensure compliance with HIPAA and other regulations when handling patient information.
+</Warning>
+
+- **PHI Data**: Audio may contain protected health information
+- **Compliance**: Review Gladia's BAA if needed for HIPAA
+- **Encryption**: Audio sent over secure WebSocket
+- **Storage**: Gladia does not store audio by default
+- **Access**: Limit API key access appropriately
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Complete Integration" icon="check" href="/integrations/overview">
+    Review all integrations setup
+  </Card>
+  
+  <Card title="Development Guide" icon="code" href="/development">
+    Start building with MedMitra
+  </Card>
+</CardGroup>

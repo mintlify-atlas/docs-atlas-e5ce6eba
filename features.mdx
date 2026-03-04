@@ -1,0 +1,118 @@
+---
+title: Features overview
+description: Explore MedMitra's comprehensive AI-powered capabilities for medical case management and clinical decision support
+---
+
+MedMitra provides healthcare professionals with a comprehensive suite of AI-powered features designed to streamline clinical workflows, enhance diagnostic accuracy, and improve patient care delivery.
+
+## Core capabilities
+
+<CardGroup cols={2}>
+  <Card title="Patient case management" icon="folder-medical" href="/features/case-management">
+    Create, organize, and track patient cases with comprehensive data management and secure storage.
+  </Card>
+  
+  <Card title="Document processing" icon="file-medical" href="/features/document-processing">
+    Upload and process PDF lab reports and radiology images with intelligent text extraction and AI analysis.
+  </Card>
+  
+  <Card title="AI-powered analysis" icon="brain" href="/features/ai-analysis">
+    Leverage multi-agent AI workflows powered by LangGraph to analyze medical documents and generate clinical insights.
+  </Card>
+  
+  <Card title="SOAP note generation" icon="notes-medical" href="/features/soap-notes">
+    Automatically generate structured SOAP notes from case data for standardized clinical documentation.
+  </Card>
+  
+  <Card title="Diagnosis support" icon="stethoscope" href="/features/diagnosis-support">
+    Get AI-assisted primary diagnoses with ICD-10 codes, confidence scores, and supporting evidence.
+  </Card>
+  
+  <Card title="Secure authentication" icon="shield-halved" href="/guides/authentication">
+    Robust user authentication and authorization powered by Supabase Auth for data privacy and access control.
+  </Card>
+</CardGroup>
+
+## Key benefits
+
+### For healthcare professionals
+
+- **Save time on documentation** - Automatic SOAP note generation reduces manual documentation effort by up to 70%
+- **Make informed decisions** - AI-assisted diagnoses with confidence scores and supporting evidence help validate clinical reasoning
+- **Streamline workflows** - Centralized case management eliminates context switching between multiple systems
+- **Improve accuracy** - Automated extraction of lab values and image findings reduces transcription errors
+
+### For healthcare organizations
+
+- **Enhance quality of care** - Standardized documentation ensures consistent clinical practices across providers
+- **Increase efficiency** - Faster case processing allows clinicians to see more patients without sacrificing quality
+- **Reduce costs** - Automated workflows decrease administrative overhead and operational expenses
+- **Support compliance** - Structured data formats facilitate reporting and regulatory compliance
+
+## Technology highlights
+
+<AccordionGroup>
+  <Accordion title="Multi-agent AI system">
+    MedMitra uses specialized AI agents powered by LangGraph to process different types of medical data:
+    
+    - **Medical Insights Agent** - Orchestrates the complete analysis workflow using LLM-based reasoning
+    - **Vision Agent** - Analyzes radiology images with multimodal vision models
+    - **Document Parser** - Extracts structured data from PDF lab reports
+    
+    Each agent is optimized for its specific task, ensuring high-quality outputs across all medical document types.
+  </Accordion>
+  
+  <Accordion title="State-of-the-art language models">
+    MedMitra leverages Groq's ultra-fast inference infrastructure with state-of-the-art models:
+    
+    - **Llama 3.3 70B** - For medical text analysis, SOAP notes, and diagnosis generation
+    - **LLaVA Vision Scout** - For radiology image interpretation and finding extraction
+    
+    These models are specifically chosen for their medical reasoning capabilities and clinical accuracy.
+  </Accordion>
+  
+  <Accordion title="Confidence scoring">
+    Every AI-generated insight includes a confidence score (0.0 to 1.0) that helps clinicians understand the reliability of the analysis:
+    
+    - **0.8 - 1.0 (High)** - Strong evidence and clear clinical patterns
+    - **0.6 - 0.79 (Moderate)** - Reasonable confidence with some ambiguity
+    - **0.0 - 0.59 (Low)** - Uncertain findings requiring further investigation
+    
+    This transparency allows healthcare professionals to appropriately weigh AI recommendations in their clinical decision-making.
+  </Accordion>
+  
+  <Accordion title="Secure architecture">
+    MedMitra is built with healthcare data security at its core:
+    
+    - **End-to-end encryption** - All sensitive medical data is encrypted in transit and at rest
+    - **Row-level security** - Database policies ensure users can only access their own cases
+    - **Secure file storage** - Medical documents are stored in isolated Supabase Storage buckets
+    - **Audit logging** - All system actions are logged for compliance and security monitoring
+  </Accordion>
+</AccordionGroup>
+
+## Get started
+
+Ready to explore MedMitra's capabilities? Follow our getting started guide to set up the system and create your first case.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart guide" icon="rocket" href="/getting-started/quickstart">
+    Get up and running with MedMitra in minutes
+  </Card>
+  
+  <Card title="Installation" icon="download" href="/getting-started/installation">
+    Complete installation guide for both frontend and backend
+  </Card>
+  
+  <Card title="Create your first case" icon="file-medical" href="/guides/creating-cases">
+    Step-by-step tutorial for creating and analyzing a patient case
+  </Card>
+  
+  <Card title="API reference" icon="code" href="/api-reference/introduction">
+    Integrate MedMitra into your existing healthcare applications
+  </Card>
+</CardGroup>
+
+<Note>
+MedMitra is designed to assist healthcare professionals, not replace clinical judgment. All AI-generated insights should be reviewed by qualified medical practitioners before use in patient care.
+</Note>

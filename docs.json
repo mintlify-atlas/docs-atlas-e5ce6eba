@@ -1,122 +1,127 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "MedMitra",
+  "theme": "almond",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#4693cb",
+    "light": "#77828a",
+    "dark": "#c3d0da"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://media.brand.dev/d3a72837-f6d1-49ff-a352-1c31117cae3d.png",
+  "logo": {
+    "light": "https://media.brand.dev/d3a72837-f6d1-49ff-a352-1c31117cae3d.png",
+    "dark": "https://media.brand.dev/d3a72837-f6d1-49ff-a352-1c31117cae3d.png"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/Spyrosigma/Medmitra"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/Spyrosigma/Medmitra"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Overview",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
+              "introduction",
+              "features"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Getting Started",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "getting-started/quickstart",
+              "getting-started/installation",
+              "getting-started/configuration"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "Core Features",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "features/case-management",
+              "features/document-processing",
+              "features/ai-analysis",
+              "features/soap-notes",
+              "features/diagnosis-support"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "User Guide",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guides/creating-cases",
+              "guides/uploading-documents",
+              "guides/viewing-insights",
+              "guides/authentication"
+            ]
+          },
+          {
+            "group": "AI Agents",
+            "pages": [
+              "ai-agents/overview",
+              "ai-agents/medical-insights-agent",
+              "ai-agents/vision-agent",
+              "ai-agents/workflow"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Getting Started",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/authentication"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Endpoints",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/endpoints/create-case",
+              "api-reference/endpoints/get-cases",
+              "api-reference/endpoints/get-case-by-id",
+              "api-reference/endpoints/update-case",
+              "api-reference/endpoints/delete-case",
+              "api-reference/endpoints/upload-files",
+              "api-reference/endpoints/get-files"
+            ]
+          },
+          {
+            "group": "Data Models",
+            "pages": [
+              "api-reference/models/case",
+              "api-reference/models/patient",
+              "api-reference/models/insights",
+              "api-reference/models/soap-note",
+              "api-reference/models/diagnosis"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "External Services",
+            "pages": [
+              "integrations/overview",
+              "integrations/supabase",
+              "integrations/groq",
+              "integrations/llamaparse",
+              "integrations/gladia"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
-        }
-      ]
-    }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ],
-    "primary": {
-      "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
-    }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
-  },
-  "footer": {
-    "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
-    }
+    ]
   }
 }

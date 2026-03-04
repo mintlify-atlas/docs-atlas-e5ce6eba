@@ -1,0 +1,123 @@
+---
+title: "Get All Cases"
+api: "GET /cases/all_cases"
+description: "Retrieve all medical cases for the authenticated user"
+---
+
+## Authentication
+
+This endpoint requires authentication. Include the user ID as a query parameter.
+
+## Query Parameters
+
+<ParamField query="user_id" type="string" required>
+  The ID of the authenticated user (doctor) whose cases to retrieve
+</ParamField>
+
+## Response
+
+<ResponseField name="cases" type="array">
+  Array of case objects belonging to the user
+  
+  <ResponseField name="cases[].case_id" type="string">
+    Unique UUID identifier for the case
+  </ResponseField>
+  
+  <ResponseField name="cases[].user_id" type="string">
+    ID of the doctor who created the case
+  </ResponseField>
+  
+  <ResponseField name="cases[].patient_name" type="string">
+    Patient's full name
+  </ResponseField>
+  
+  <ResponseField name="cases[].patient_age" type="integer">
+    Patient's age in years
+  </ResponseField>
+  
+  <ResponseField name="cases[].patient_gender" type="string">
+    Patient's gender
+  </ResponseField>
+  
+  <ResponseField name="cases[].case_summary" type="string">
+    Case summary or doctor's notes
+  </ResponseField>
+  
+  <ResponseField name="cases[].status" type="string">
+    Current status of the case (e.g., "pending", "analyzing", "completed")
+  </ResponseField>
+  
+  <ResponseField name="cases[].created_at" type="string">
+    ISO 8601 timestamp when the case was created
+  </ResponseField>
+  
+  <ResponseField name="cases[].updated_at" type="string">
+    ISO 8601 timestamp when the case was last updated
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.medmitra.com/cases/all_cases?user_id=b8acad4b-4944-4d66-b405-de70886e7248" \
+  -H "Content-Type: application/json"
+```
+
+## Example Response
+
+```json
+{
+  "cases": [
+    {
+      "case_id": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
+      "user_id": "b8acad4b-4944-4d66-b405-de70886e7248",
+      "patient_name": "John Doe",
+      "patient_age": 45,
+      "patient_gender": "male",
+      "case_summary": "Patient presents with chest pain and shortness of breath",
+      "status": "completed",
+      "created_at": "2026-03-04T10:30:00Z",
+      "updated_at": "2026-03-04T11:45:00Z"
+    },
+    {
+      "case_id": "b2c3d4e5-6789-01bc-def0-2345678901bc",
+      "user_id": "b8acad4b-4944-4d66-b405-de70886e7248",
+      "patient_name": "Jane Smith",
+      "patient_age": 32,
+      "patient_gender": "female",
+      "case_summary": "Follow-up appointment for diabetes management",
+      "status": "analyzing",
+      "created_at": "2026-03-03T14:20:00Z",
+      "updated_at": "2026-03-03T14:20:00Z"
+    }
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="400 Bad Request" type="error">
+  Invalid request or Supabase client error
+  
+  ```json
+  {
+    "detail": "Error message describing the issue"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error" type="error">
+  Server error during data retrieval
+  
+  ```json
+  {
+    "detail": "Internal server error: {error details}"
+  }
+  ```
+</ResponseField>
+
+## Notes
+
+- The endpoint returns all cases created by the specified user
+- Cases are returned in the order they were created in the database
+- Use the [Get Case by ID](/api-reference/endpoints/get-case-by-id) endpoint to retrieve detailed information including files and AI insights for a specific case

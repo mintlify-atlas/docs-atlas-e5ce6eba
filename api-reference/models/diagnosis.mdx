@@ -1,0 +1,180 @@
+---
+title: 'Diagnosis Model'
+description: 'Medical diagnosis with ICD codes and supporting evidence'
+---
+
+## Diagnosis
+
+The `Diagnosis` model represents a medical diagnosis with standardized coding, detailed description, confidence assessment, and supporting clinical evidence.
+
+### Fields
+
+<ResponseField name="primary_diagnosis" type="string" required>
+  Name of the primary medical diagnosis
+  
+  Should use standard medical terminology and be as specific as possible (e.g., "Acute ST-elevation myocardial infarction" rather than "Heart attack")
+</ResponseField>
+
+<ResponseField name="icd_code" type="string">
+  ICD-10 or ICD-11 code for the diagnosis
+  
+  Standardized medical classification code used for:
+  - Medical billing and insurance
+  - Health statistics and epidemiology
+  - Clinical documentation
+  - Research and quality reporting
+  
+  Example: "I21.19" for ST-elevation myocardial infarction
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  Detailed clinical description of the diagnosis
+  
+  Should include:
+  - Pathophysiology or disease mechanism
+  - Specific characteristics or subtype
+  - Severity or stage if applicable
+  - Anatomical location when relevant
+</ResponseField>
+
+<ResponseField name="confidence_score" type="float" required>
+  AI confidence score for this diagnosis (range: 0.0 to 1.0)
+  
+  Factors affecting confidence:
+  - Clarity of clinical presentation
+  - Strength of supporting evidence
+  - Consistency across multiple data sources
+  - Presence of pathognomonic findings
+  
+  Validated using Pydantic's `Field(ge=0.0, le=1.0)` constraint
+</ResponseField>
+
+<ResponseField name="supporting_evidence" type="List[string]" required>
+  List of clinical findings, test results, and observations that support this diagnosis
+  
+  May include:
+  - Laboratory test results
+  - Imaging findings
+  - Physical examination findings
+  - Patient symptoms
+  - Medical history factors
+</ResponseField>
+
+### Example
+
+```json
+{
+  "primary_diagnosis": "Acute ST-elevation myocardial infarction (STEMI)",
+  "icd_code": "I21.19",
+  "description": "Acute ST-elevation myocardial infarction involving the inferior wall with significant cardiac biomarker elevation and characteristic ECG changes. Represents acute occlusion of the right coronary artery requiring immediate intervention.",
+  "confidence_score": 0.94,
+  "supporting_evidence": [
+    "ST-segment elevation in inferior leads (II, III, aVF)",
+    "Elevated troponin I (2.5 ng/mL, reference <0.04 ng/mL)",
+    "Elevated CK-MB (45 U/L, reference 5-25 U/L)",
+    "Classic presentation: crushing chest pain radiating to left arm and jaw",
+    "Risk factors: hypertension, hyperlipidemia, male, age 45",
+    "Symptom onset within 2 hours of presentation"
+  ]
+}
+```
+
+### Additional Example - Diabetes
+
+```json
+{
+  "primary_diagnosis": "Type 2 Diabetes Mellitus with hyperglycemia",
+  "icd_code": "E11.65",
+  "description": "Type 2 Diabetes Mellitus with poor glycemic control as evidenced by elevated HbA1c and fasting glucose. Patient demonstrates insulin resistance with inadequate glycemic management on current medication regimen.",
+  "confidence_score": 0.88,
+  "supporting_evidence": [
+    "HbA1c 9.2% (reference <5.7% for non-diabetic)",
+    "Fasting glucose 285 mg/dL (reference 70-100 mg/dL)",
+    "Patient-reported polyuria and polydipsia",
+    "Known history of Type 2 diabetes for 5 years",
+    "Medication non-adherence per patient report",
+    "BMI 32 (obesity)"
+  ]
+}
+```
+
+## DifferentialDiagnosis
+
+The `DifferentialDiagnosis` model represents alternative diagnoses that should be considered based on the patient's presentation. This model is used for differential diagnosis lists (currently commented out in the codebase but available for future use).
+
+### Fields
+
+<ResponseField name="condition" type="string" required>
+  Name of the alternative diagnosis being considered
+</ResponseField>
+
+<ResponseField name="probability" type="float" required>
+  Estimated probability that this is the correct diagnosis (0.0 to 1.0)
+</ResponseField>
+
+<ResponseField name="reasoning" type="string" required>
+  Clinical reasoning for why this diagnosis is being considered
+</ResponseField>
+
+<ResponseField name="distinguishing_factors" type="List[string]" required>
+  Key factors that help distinguish this diagnosis from others
+</ResponseField>
+
+### Example - Differential Diagnosis
+
+```json
+{
+  "condition": "Unstable Angina",
+  "probability": 0.35,
+  "reasoning": "Patient presents with chest pain and risk factors for coronary artery disease. However, the presence of ST-segment elevation and elevated cardiac biomarkers makes STEMI more likely than unstable angina.",
+  "distinguishing_factors": [
+    "ST-segment elevation present (favors STEMI over unstable angina)",
+    "Troponin elevation (favors STEMI)",
+    "Pain duration >20 minutes (consistent with MI)",
+    "Lack of response to rest (more consistent with MI than angina)"
+  ]
+}
+```
+
+### ICD Code Reference
+
+Common ICD-10 code categories:
+
+- **A00-B99**: Infectious and parasitic diseases
+- **C00-D49**: Neoplasms
+- **E00-E89**: Endocrine, nutritional, and metabolic diseases
+- **I00-I99**: Circulatory system diseases
+- **J00-J99**: Respiratory system diseases
+- **K00-K95**: Digestive system diseases
+- **M00-M99**: Musculoskeletal system diseases
+
+### Confidence Score Interpretation
+
+- **0.90-1.0**: High confidence - Clear clinical presentation with strong supporting evidence
+- **0.75-0.89**: Moderate-high confidence - Good evidence but some ambiguity
+- **0.60-0.74**: Moderate confidence - Reasonable evidence but alternatives should be considered
+- **0.0-0.59**: Low confidence - Uncertain diagnosis requiring additional investigation
+
+### Clinical Documentation Best Practices
+
+1. **Use Specific Terms**: Prefer "Acute ST-elevation myocardial infarction" over "Heart attack"
+2. **Include Location**: "Right lower lobe pneumonia" vs "Pneumonia"
+3. **Specify Severity**: "Severe" vs "Mild" when applicable
+4. **Note Acuity**: "Acute" vs "Chronic" vs "Acute on chronic"
+5. **Document Complications**: Include complications in the description
+
+### Integration with MedMitra
+
+In the MedMitra system, diagnoses are:
+- Generated by AI analysis of case data
+- Included in the `MedicalInsights` output as `primary_diagnosis`
+- Supported by evidence from lab results, radiology, and clinical presentation
+- Coded with appropriate ICD-10 codes when identifiable
+- Scored for confidence based on evidence strength
+
+## Related Models
+
+- [Medical Insights Model](/api-reference/models/insights) - Parent model containing diagnosis
+- [Case Model](/api-reference/models/case) - Input case data used for diagnosis
+- [SOAP Note Model](/api-reference/models/soap-note) - Clinical documentation including assessment
+- [Patient Model](/api-reference/models/patient) - Patient demographic context

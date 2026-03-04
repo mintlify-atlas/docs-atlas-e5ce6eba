@@ -1,0 +1,423 @@
+---
+title: 'Diagnosis Support'
+description: 'AI-powered diagnostic assistance with evidence-based recommendations'
+icon: 'stethoscope'
+---
+
+## Overview
+
+MedMitra provides AI-powered diagnostic support by analyzing clinical data and generating evidence-based diagnosis recommendations. The system considers patient history, lab results, imaging findings, and clinical presentation to suggest primary diagnoses with supporting evidence.
+
+<Warning>
+Diagnostic suggestions are for clinical decision support only and must be validated by qualified healthcare professionals. Not intended for direct patient diagnosis without physician review.
+</Warning>
+
+## Diagnosis Model
+
+Diagnoses are structured with comprehensive supporting data:
+
+```python
+class Diagnosis(BaseModel):
+    primary_diagnosis: str
+    icd_code: Optional[str] = None
+    description: str
+    confidence_score: float = Field(ge=0.0, le=1.0)
+    supporting_evidence: List[str]
+```
+
+Source: `backend/models/data_models.py:70-75`
+
+### Model Components
+
+<CardGroup cols={2}>
+  <Card title="Primary Diagnosis" icon="notes-medical">
+    The most likely diagnosis based on available evidence
+  </Card>
+  <Card title="ICD Code" icon="barcode">
+    International Classification of Diseases code for billing and records
+  </Card>
+  <Card title="Description" icon="file-lines">
+    Detailed explanation of the diagnosis and clinical presentation
+  </Card>
+  <Card title="Supporting Evidence" icon="list-check">
+    Specific findings that support the diagnosis
+  </Card>
+</CardGroup>
+
+## Generation Process
+
+Diagnoses are generated from SOAP notes:
+
+<Steps>
+  <Step title="SOAP Note Input">
+    Complete SOAP note provides clinical context
+  </Step>
+  <Step title="Evidence Analysis">
+    LLM analyzes objective findings and assessment
+  </Step>
+  <Step title="Diagnosis Formulation">
+    Primary diagnosis determined with supporting evidence
+  </Step>
+  <Step title="ICD Code Mapping">
+    Appropriate ICD-10 code assigned
+  </Step>
+  <Step title="Confidence Scoring">
+    System evaluates certainty of diagnosis
+  </Step>
+</Steps>
+
+### Implementation
+
+```python
+async def _generate_diagnosis(self, state: MedicalAnalysisState) -> MedicalAnalysisState:
+    """Generate primary diagnosis from SOAP note"""
+    
+    # Generate diagnosis using specialized prompt
+    diagnosis_response = await self.llm_manager.generate_response(
+        system_prompt=DIAGNOSIS_PROMPT,
+        user_input="SOAP Note: " + state["soap_note"].model_dump_json()
+    )
+    
+    # Create structured diagnosis
+    diagnosis = Diagnosis(
+        primary_diagnosis=diagnosis_response.get("diagnosis", ""),
+        icd_code=diagnosis_response.get("icd_code"),
+        description=diagnosis_response.get("description", ""),
+        confidence_score=diagnosis_response.get("confidence_score", 0.8),
+        supporting_evidence=diagnosis_response.get("supporting_evidence", [])
+    )
+    
+    state["primary_diagnosis"] = diagnosis
+    state["processing_stage"] = "diagnosis_generated"
+    return state
+```
+
+Source: `backend/agents/medical_ai_agent.py:186-207`
+
+## Diagnostic Reasoning
+
+The AI considers multiple factors:
+
+### Clinical Presentation
+
+- **Symptoms**: Pattern and duration of symptoms
+- **Patient Demographics**: Age, gender, risk factors
+- **Medical History**: Previous conditions and treatments
+- **Temporal Progression**: Acute vs chronic presentation
+
+### Objective Evidence
+
+<Accordion title="Laboratory Findings">
+  - Abnormal values indicating specific conditions
+  - Patterns across multiple tests
+  - Severity markers (inflammatory markers, cell counts)
+  - Diagnostic biomarkers for specific diseases
+</Accordion>
+
+<Accordion title="Imaging Results">
+  - Radiographic patterns characteristic of diseases
+  - Anatomical abnormalities
+  - Comparison with previous studies
+  - Severity and extent of findings
+</Accordion>
+
+<Accordion title="Clinical Context">
+  - Provider's initial assessment
+  - Physical examination findings
+  - Response to previous treatments
+  - Epidemiological factors
+</Accordion>
+
+## Example Diagnosis
+
+Here's a complete diagnosis output:
+
+<CodeGroup>
+```json Primary Diagnosis
+{
+  "primary_diagnosis": "Community-Acquired Pneumonia",
+  "icd_code": "J18.9",
+  "description": "Acute bacterial or atypical pneumonia acquired outside of healthcare settings. Patient presents with respiratory symptoms, elevated inflammatory markers, and radiographic evidence of pulmonary infiltrates. Clinical presentation and bilateral interstitial pattern suggest atypical pneumonia, possibly mycoplasma or viral etiology.",
+  "confidence_score": 0.87,
+  "supporting_evidence": [
+    "Bilateral interstitial infiltrates on chest X-ray",
+    "Elevated WBC count (12,500/μL) indicating infection",
+    "Elevated C-reactive protein (45 mg/L) indicating inflammation",
+    "Clinical symptoms of cough and dyspnea",
+    "No evidence of pleural effusion or consolidation typical of bacterial pneumonia",
+    "Patient age and demographics consistent with atypical pneumonia"
+  ]
+}
+```
+</CodeGroup>
+
+## Confidence Scoring
+
+The confidence score reflects diagnostic certainty:
+
+### High Confidence (0.9 - 1.0)
+
+<Check>
+- Multiple supporting findings align clearly
+- Classic presentation of well-defined condition
+- Pathognomonic findings present
+- No contradictory evidence
+</Check>
+
+### Moderate Confidence (0.7 - 0.9)
+
+<Check>
+- Several supporting findings present
+- Typical but not definitive presentation
+- Some findings support diagnosis
+- Minor inconsistencies possible
+</Check>
+
+### Low Confidence (Below 0.7)
+
+<Warning>
+- Limited supporting evidence
+- Atypical presentation
+- Multiple differential diagnoses possible
+- Requires additional investigation
+</Warning>
+
+## Supporting Evidence
+
+Each diagnosis includes specific evidence:
+
+```python
+supporting_evidence = [
+    "Lab finding: Elevated WBC indicating infection",
+    "Imaging: Bilateral infiltrates on CXR",
+    "Clinical: Progressive respiratory symptoms",
+    "History: Recent exposure in healthcare setting",
+    "Physical: Decreased O2 saturation"
+]
+```
+
+Evidence is categorized by:
+- **Laboratory data**: Specific abnormal values
+- **Imaging findings**: Radiographic patterns
+- **Clinical presentation**: Symptoms and signs
+- **Patient history**: Risk factors and exposures
+
+## ICD-10 Coding
+
+The system provides appropriate ICD-10 codes:
+
+### Code Structure
+
+- **Category**: Disease classification (e.g., J00-J99 for respiratory)
+- **Specificity**: Detailed code for precise diagnosis
+- **Laterality**: Left/right/bilateral when applicable
+- **Episode**: Initial encounter, subsequent, sequela
+
+### Common Codes Generated
+
+<CardGroup cols={2}>
+  <Card title="Respiratory Infections">
+    J18.9 - Pneumonia, unspecified
+    J20.9 - Acute bronchitis
+  </Card>
+  <Card title="Cardiovascular">
+    I10 - Essential hypertension
+    I25.10 - Atherosclerotic heart disease
+  </Card>
+  <Card title="Metabolic">
+    E11.9 - Type 2 diabetes mellitus
+    E78.5 - Hyperlipidemia
+  </Card>
+  <Card title="Musculoskeletal">
+    M25.50 - Joint pain, unspecified
+    M79.3 - Panniculitis
+  </Card>
+</CardGroup>
+
+## Integration with Medical Insights
+
+Diagnosis is part of the complete insights package:
+
+```python
+class MedicalInsights(BaseModel):
+    case_summary: CaseSummary
+    soap_note: SOAPNote
+    primary_diagnosis: Diagnosis  # Diagnosis component
+    overall_confidence_score: float
+    generated_at: datetime
+```
+
+Source: `backend/models/data_models.py:96-104`
+
+## Differential Diagnosis (Future Feature)
+
+The system is designed to support differential diagnoses:
+
+```python
+class DifferentialDiagnosis(BaseModel):
+    condition: str
+    probability: float = Field(ge=0.0, le=1.0)
+    reasoning: str
+    distinguishing_factors: List[str]
+```
+
+Source: `backend/models/data_models.py:77-81`
+
+<Note>
+Differential diagnosis generation is currently commented out in the codebase but designed for future implementation.
+</Note>
+
+### Planned Differential Features
+
+- **Ranked Alternatives**: Top 3-5 alternative diagnoses
+- **Probability Scores**: Likelihood of each diagnosis
+- **Distinguishing Factors**: Key differences between diagnoses
+- **Recommended Tests**: Investigations to differentiate
+
+## Investigation Recommendations (Future Feature)
+
+Planned feature for diagnostic workup:
+
+```python
+class InvestigationRecommendation(BaseModel):
+    investigation_type: str
+    urgency: Literal["urgent", "routine", "follow-up"]
+    rationale: str
+    expected_findings: Optional[str] = None
+```
+
+Source: `backend/models/data_models.py:83-87`
+
+### Recommendation Categories
+
+- **Urgent**: Immediate testing required for patient safety
+- **Routine**: Standard workup for diagnosis confirmation
+- **Follow-up**: Monitoring tests after treatment initiation
+
+## Treatment Recommendations (Future Feature)
+
+Planned therapeutic guidance:
+
+```python
+class TreatmentRecommendation(BaseModel):
+    treatment_type: str
+    description: str
+    dosage: Optional[str] = None
+    duration: Optional[str] = None
+    precautions: Optional[List[str]] = None
+```
+
+Source: `backend/models/data_models.py:89-94`
+
+## Accessing Diagnosis Data
+
+Retrieve diagnosis through the case API:
+
+```python
+GET /cases/cases/{case_id}
+
+Response:
+{
+  "case": {...},
+  "ai_insights": {
+    "primary_diagnosis": {
+      "primary_diagnosis": "Community-Acquired Pneumonia",
+      "icd_code": "J18.9",
+      "description": "Acute pneumonia...",
+      "confidence_score": 0.87,
+      "supporting_evidence": [
+        "Bilateral infiltrates on CXR",
+        "Elevated WBC count",
+        "..."
+      ]
+    },
+    "soap_note": {...},
+    "case_summary": {...}
+  }
+}
+```
+
+## Clinical Decision Support Workflow
+
+<Steps>
+  <Step title="Data Collection">
+    Gather all clinical data (history, labs, imaging)
+  </Step>
+  <Step title="AI Analysis">
+    System processes data and generates diagnosis
+  </Step>
+  <Step title="Physician Review">
+    Doctor reviews AI suggestions and supporting evidence
+  </Step>
+  <Step title="Clinical Validation">
+    Physician validates or modifies based on clinical judgment
+  </Step>
+  <Step title="Patient Care">
+    Final diagnosis used for treatment planning
+  </Step>
+</Steps>
+
+## Limitations and Considerations
+
+<Warning>
+**Important Limitations:**
+
+- AI suggestions require physician validation
+- Cannot replace clinical examination and judgment
+- May miss rare or unusual presentations
+- Limited by quality and completeness of input data
+- Cannot account for all patient-specific factors
+- Not suitable for emergency/life-threatening situations without immediate physician oversight
+</Warning>
+
+## Best Practices
+
+<Tip>
+**For Optimal Diagnostic Support:**
+
+1. **Complete Data Entry**: Provide comprehensive case summaries
+2. **Quality Documents**: Upload clear, complete lab and imaging reports
+3. **Clinical Context**: Include relevant history and risk factors
+4. **Critical Review**: Always validate AI suggestions clinically
+5. **Confidence Assessment**: Pay attention to confidence scores
+6. **Supporting Evidence**: Review all evidence listed
+7. **Patient Context**: Consider individual patient circumstances
+</Tip>
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Primary Care" icon="user-doctor">
+    Quick reference for common conditions
+  </Card>
+  <Card title="Emergency Medicine" icon="truck-medical">
+    Rapid triage assistance
+  </Card>
+  <Card title="Specialist Referrals" icon="notes-medical">
+    Documentation for referral justification
+  </Card>
+  <Card title="Medical Education" icon="graduation-cap">
+    Teaching tool for diagnostic reasoning
+  </Card>
+</CardGroup>
+
+## Quality Assurance
+
+The system includes multiple validation layers:
+
+1. **Data Validation**: Pydantic models ensure structure
+2. **Confidence Scoring**: Flags uncertain diagnoses
+3. **Evidence Requirements**: Diagnosis must have supporting evidence
+4. **ICD Code Validation**: Codes checked against standard registry
+5. **Clinical Review**: Physician validation required
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="SOAP Notes" icon="notes-medical" href="/features/soap-notes">
+    Learn about SOAP note generation
+  </Card>
+  <Card title="Case Management" icon="folder-medical" href="/features/case-management">
+    Return to case management overview
+  </Card>
+</CardGroup>

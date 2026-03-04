@@ -1,0 +1,193 @@
+---
+title: "Create Case"
+api: "POST /cases/create_case"
+description: "Create a new medical case with patient information and optional file uploads"
+---
+
+## Authentication
+
+This endpoint requires authentication. Include the user ID in the request body.
+
+## Request Body
+
+This endpoint accepts `multipart/form-data` for file uploads.
+
+<ParamField body="user_id" type="string" required>
+  The ID of the authenticated user (doctor) creating the case
+</ParamField>
+
+<ParamField body="patient_name" type="string" required>
+  The full name of the patient
+</ParamField>
+
+<ParamField body="patient_age" type="integer" required>
+  The age of the patient in years
+</ParamField>
+
+<ParamField body="patient_gender" type="string" required>
+  The gender of the patient
+</ParamField>
+
+<ParamField body="case_summary" type="string">
+  Optional summary or initial notes about the case from the doctor
+</ParamField>
+
+<ParamField body="lab_files" type="file[]">
+  Optional array of laboratory report files (PDF, images, etc.)
+</ParamField>
+
+<ParamField body="radiology_files" type="file[]">
+  Optional array of radiology report or imaging files
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message indicating the case was created
+</ResponseField>
+
+<ResponseField name="case" type="object">
+  The created case object with all details
+  
+  <ResponseField name="case.case_id" type="string">
+    Unique UUID identifier for the case
+  </ResponseField>
+  
+  <ResponseField name="case.user_id" type="string">
+    ID of the doctor who created the case
+  </ResponseField>
+  
+  <ResponseField name="case.patient_name" type="string">
+    Patient's full name
+  </ResponseField>
+  
+  <ResponseField name="case.patient_age" type="integer">
+    Patient's age
+  </ResponseField>
+  
+  <ResponseField name="case.patient_gender" type="string">
+    Patient's gender
+  </ResponseField>
+  
+  <ResponseField name="case.case_summary" type="string">
+    Case summary or notes
+  </ResponseField>
+  
+  <ResponseField name="case.created_at" type="string">
+    Timestamp when the case was created
+  </ResponseField>
+  
+  <ResponseField name="case.status" type="string">
+    Current status of the case (e.g., "pending", "analyzing")
+  </ResponseField>
+</ResponseField>
+
+<ResponseField name="uploaded_files" type="array">
+  Array of uploaded file objects
+  
+  <ResponseField name="uploaded_files[].file_id" type="string">
+    Unique identifier for the file
+  </ResponseField>
+  
+  <ResponseField name="uploaded_files[].file_name" type="string">
+    Original filename
+  </ResponseField>
+  
+  <ResponseField name="uploaded_files[].file_type" type="string">
+    MIME type of the file
+  </ResponseField>
+  
+  <ResponseField name="uploaded_files[].file_size" type="integer">
+    File size in bytes
+  </ResponseField>
+  
+  <ResponseField name="uploaded_files[].file_url" type="string">
+    URL path to access the file
+  </ResponseField>
+  
+  <ResponseField name="uploaded_files[].file_category" type="string">
+    Category of the file ("lab" or "radiology")
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST https://api.medmitra.com/cases/create_case \
+  -H "Content-Type: multipart/form-data" \
+  -F "user_id=b8acad4b-4944-4d66-b405-de70886e7248" \
+  -F "patient_name=John Doe" \
+  -F "patient_age=45" \
+  -F "patient_gender=male" \
+  -F "case_summary=Patient presents with chest pain and shortness of breath" \
+  -F "lab_files=@/path/to/lab_report.pdf" \
+  -F "radiology_files=@/path/to/xray.jpg"
+```
+
+## Example Response
+
+```json
+{
+  "message": "Case created successfully",
+  "case": {
+    "case_id": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
+    "user_id": "b8acad4b-4944-4d66-b405-de70886e7248",
+    "patient_name": "John Doe",
+    "patient_age": 45,
+    "patient_gender": "male",
+    "case_summary": "Patient presents with chest pain and shortness of breath",
+    "status": "analyzing",
+    "created_at": "2026-03-04T10:30:00Z"
+  },
+  "uploaded_files": [
+    {
+      "file_id": "f1e2d3c4-5678-90ab-cdef-1234567890ab",
+      "file_name": "lab_report.pdf",
+      "file_type": "application/pdf",
+      "file_size": 245678,
+      "file_url": "lab_files/a1b2c3d4-5678-90ab-cdef-1234567890ab/lab_report.pdf",
+      "file_category": "lab"
+    },
+    {
+      "file_id": "a9b8c7d6-5432-10fe-dcba-0987654321ab",
+      "file_name": "xray.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 1234567,
+      "file_url": "radiology_files/a1b2c3d4-5678-90ab-cdef-1234567890ab/xray.jpg",
+      "file_category": "radiology"
+    }
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="400 Bad Request" type="error">
+  Invalid request data or Supabase client error
+  
+  ```json
+  {
+    "detail": "Error message describing the validation failure"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error" type="error">
+  Server error during case creation
+  
+  ```json
+  {
+    "detail": "Internal server error: {error details}"
+  }
+  ```
+</ResponseField>
+
+## Background Processing
+
+After successful case creation, an AI-powered analysis task is automatically triggered in the background to:
+- Extract text from uploaded documents
+- Analyze lab results and radiology reports
+- Generate medical insights and recommendations
+- Update the case with AI-generated analysis
+
+You can retrieve the analysis results using the [Get Case by ID](/api-reference/endpoints/get-case-by-id) endpoint once processing is complete.

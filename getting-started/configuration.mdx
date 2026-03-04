@@ -1,0 +1,555 @@
+---
+title: 'Configuration'
+description: 'Complete configuration reference for MedMitra'
+icon: 'gear'
+---
+
+## Overview
+
+MedMitra uses environment variables for configuration, keeping sensitive information secure and separate from code. This guide covers all available configuration options for both backend and frontend.
+
+## Environment Files
+
+MedMitra uses different environment files for different components:
+
+<CardGroup cols={2}>
+  <Card title="Backend" icon="python">
+    `.env` in the `backend/` directory
+  </Card>
+  <Card title="Frontend" icon="react">
+    `.env.local` in the `frontend/` directory
+  </Card>
+</CardGroup>
+
+<Warning>
+  Never commit `.env` or `.env.local` files to version control. These files contain sensitive API keys and credentials.
+</Warning>
+
+## Backend Configuration
+
+The backend requires the following environment variables in `backend/.env`:
+
+### Supabase Configuration
+
+Supabase provides database, authentication, and file storage services.
+
+<ParamField path="SUPABASE_URL" type="string" required>
+  Your Supabase project URL. Find this in Project Settings → API.
+
+  **Format:** `https://your-project-id.supabase.co`
+
+  **Example:**
+  ```ini
+  SUPABASE_URL="https://xyzabcdef123.supabase.co"
+  ```
+</ParamField>
+
+<ParamField path="SUPABASE_SERVICE_ROLE_KEY" type="string" required>
+  The service role key with admin privileges. This key bypasses Row Level Security (RLS).
+
+  <Warning>
+    Keep this key secret! Never expose it in client-side code or commit it to version control.
+  </Warning>
+
+  **Location:** Project Settings → API → service_role key
+
+  **Example:**
+  ```ini
+  SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  ```
+</ParamField>
+
+### AI Service Configuration
+
+#### Groq API
+
+<ParamField path="GROQ_API_KEY" type="string" required>
+  API key for Groq's LLM inference service. Used for medical text analysis and radiology image interpretation.
+
+  **Models Used:**
+  - `llama-3.3-70b-versatile` for text analysis
+  - `llava-v1.5-7b-4096-preview` for vision/image analysis
+
+  **How to Obtain:**
+  1. Visit [console.groq.com](https://console.groq.com)
+  2. Sign up or log in
+  3. Navigate to API Keys
+  4. Create a new API key
+
+  **Example:**
+  ```ini
+  GROQ_API_KEY="gsk_abcdef123456789..."
+  ```
+
+  <Info>
+    Groq offers a generous free tier with fast inference speeds. Monitor your usage in the console.
+  </Info>
+</ParamField>
+
+#### LlamaParse API
+
+<ParamField path="LLAMAPARSE_API_KEY" type="string" required>
+  API key for LlamaIndex's LlamaParse document parsing service. Used to extract structured text from PDF lab reports.
+
+  **How to Obtain:**
+  1. Visit [cloud.llamaindex.ai](https://cloud.llamaindex.ai)
+  2. Create an account
+  3. Navigate to API Keys in settings
+  4. Generate a new API key
+
+  **Example:**
+  ```ini
+  LLAMAPARSE_API_KEY="llx-..."
+  ```
+
+  <Tip>
+    LlamaParse is specifically designed for complex document layouts and performs better than standard PDF parsers for medical documents.
+  </Tip>
+</ParamField>
+
+### Vector Database Configuration (Optional)
+
+These settings are for future features involving semantic search and RAG (Retrieval-Augmented Generation).
+
+<ParamField path="WEAVIATE_API_KEY" type="string">
+  API key for Weaviate vector database (optional, for future features).
+
+  **Example:**
+  ```ini
+  WEAVIATE_API_KEY="your_weaviate_api_key"
+  ```
+
+  <Note>
+    Currently not used in production but reserved for future enhancements.
+  </Note>
+</ParamField>
+
+<ParamField path="WEAVIATE_REST_URL" type="string">
+  REST endpoint URL for Weaviate instance.
+
+  **Example:**
+  ```ini
+  WEAVIATE_REST_URL="https://your-cluster.weaviate.network"
+  ```
+</ParamField>
+
+### Complete Backend .env Template
+
+<CodeGroup>
+```ini Required Only
+# Supabase
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
+
+# AI Services
+GROQ_API_KEY="your_groq_api_key"
+LLAMAPARSE_API_KEY="your_llamaparse_api_key"
+```
+
+```ini With Optional
+# Supabase
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
+
+# AI Services
+GROQ_API_KEY="your_groq_api_key"
+LLAMAPARSE_API_KEY="your_llamaparse_api_key"
+
+# Optional: Vector Database
+WEAVIATE_API_KEY="your_weaviate_api_key"
+WEAVIATE_REST_URL="https://your-cluster.weaviate.network"
+```
+</CodeGroup>
+
+## Frontend Configuration
+
+The frontend requires the following environment variables in `frontend/.env.local`:
+
+### Supabase Configuration (Client-Side)
+
+<ParamField path="NEXT_PUBLIC_SUPABASE_URL" type="string" required>
+  Your Supabase project URL. Same as backend but with `NEXT_PUBLIC_` prefix for client-side access.
+
+  **Example:**
+  ```ini
+  NEXT_PUBLIC_SUPABASE_URL="https://xyzabcdef123.supabase.co"
+  ```
+
+  <Info>
+    The `NEXT_PUBLIC_` prefix makes this variable accessible in the browser. Only use it for non-sensitive values.
+  </Info>
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_SUPABASE_ANON_KEY" type="string" required>
+  The anonymous/public key for client-side Supabase access. This key is safe to expose in the browser.
+
+  **Location:** Project Settings → API → anon public key
+
+  **Example:**
+  ```ini
+  NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  ```
+
+  <Note>
+    This key respects Row Level Security (RLS) policies, making it safe for client-side use.
+  </Note>
+</ParamField>
+
+### Backend API Configuration
+
+<ParamField path="NEXT_PUBLIC_FASTAPI_BACKEND_URL" type="string" required>
+  URL where your FastAPI backend is running.
+
+  **Development:**
+  ```ini
+  NEXT_PUBLIC_FASTAPI_BACKEND_URL="http://localhost:8000"
+  ```
+
+  **Production:**
+  ```ini
+  NEXT_PUBLIC_FASTAPI_BACKEND_URL="https://your-backend.koyeb.app"
+  ```
+
+  <Warning>
+    Update this URL when deploying to production. Ensure your backend allows CORS requests from your frontend domain.
+  </Warning>
+</ParamField>
+
+### Speech-to-Text Configuration
+
+<ParamField path="NEXT_PUBLIC_GLADIA_API_KEY" type="string" required>
+  API key for Gladia's speech-to-text service. Used for transcribing doctor's audio notes.
+
+  **How to Obtain:**
+  1. Visit [gladia.io](https://gladia.io)
+  2. Sign up and verify your email
+  3. Navigate to the dashboard
+  4. Generate an API key
+
+  **Example:**
+  ```ini
+  NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key"
+  ```
+
+  <Info>
+    Gladia provides high-accuracy medical transcription with support for medical terminology.
+  </Info>
+</ParamField>
+
+### Complete Frontend .env.local Template
+
+```ini frontend/.env.local
+# Supabase Client Configuration
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_anon_public_key"
+
+# Backend API
+NEXT_PUBLIC_FASTAPI_BACKEND_URL="http://localhost:8000"
+
+# Speech-to-Text
+NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key"
+```
+
+## Configuration by Environment
+
+<Tabs>
+  <Tab title="Development">
+    ### Development Configuration
+
+    **Backend (.env):**
+    ```ini
+    SUPABASE_URL="https://your-project.supabase.co"
+    SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
+    GROQ_API_KEY="your_groq_api_key"
+    LLAMAPARSE_API_KEY="your_llamaparse_api_key"
+    ```
+
+    **Frontend (.env.local):**
+    ```ini
+    NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="your_anon_key"
+    NEXT_PUBLIC_FASTAPI_BACKEND_URL="http://localhost:8000"
+    NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key"
+    ```
+
+    **Server Commands:**
+    - Backend: `uvicorn app:app --reload`
+    - Frontend: `npm run dev`
+  </Tab>
+
+  <Tab title="Production">
+    ### Production Configuration
+
+    **Backend (.env):**
+    ```ini
+    SUPABASE_URL="https://your-project.supabase.co"
+    SUPABASE_SERVICE_ROLE_KEY="your_service_role_key"
+    GROQ_API_KEY="your_groq_api_key"
+    LLAMAPARSE_API_KEY="your_llamaparse_api_key"
+    ```
+
+    **Frontend (.env.production or .env.local):**
+    ```ini
+    NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="your_anon_key"
+    NEXT_PUBLIC_FASTAPI_BACKEND_URL="https://api.yourdomain.com"
+    NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key"
+    ```
+
+    **Additional Considerations:**
+    - Set up HTTPS/SSL certificates
+    - Configure CORS in backend to allow your frontend domain
+    - Use production-grade servers (Gunicorn/Uvicorn workers for backend)
+    - Enable caching and CDN for frontend assets
+  </Tab>
+
+  <Tab title="Staging">
+    ### Staging Configuration
+
+    Use a separate Supabase project for staging:
+
+    **Backend (.env.staging):**
+    ```ini
+    SUPABASE_URL="https://your-staging-project.supabase.co"
+    SUPABASE_SERVICE_ROLE_KEY="your_staging_service_role_key"
+    GROQ_API_KEY="your_groq_api_key"
+    LLAMAPARSE_API_KEY="your_llamaparse_api_key"
+    ```
+
+    **Frontend (.env.staging):**
+    ```ini
+    NEXT_PUBLIC_SUPABASE_URL="https://your-staging-project.supabase.co"
+    NEXT_PUBLIC_SUPABASE_ANON_KEY="your_staging_anon_key"
+    NEXT_PUBLIC_FASTAPI_BACKEND_URL="https://staging-api.yourdomain.com"
+    NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key"
+    ```
+  </Tab>
+</Tabs>
+
+## Loading Configuration
+
+### Backend (Python)
+
+The backend uses `python-dotenv` to load environment variables:
+
+```python config.py
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+LLAMAPARSE_API_KEY = os.getenv("LLAMAPARSE_API_KEY")
+WEAVIATE_API_KEY = os.getenv("WEAVIATE_API_KEY")
+WEAVIATE_REST_URL = os.getenv("WEAVIATE_REST_URL")
+```
+
+### Frontend (Next.js)
+
+Next.js automatically loads `.env.local` files. Access variables in code:
+
+```typescript
+// Accessible anywhere in your app
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const backendUrl = process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL
+```
+
+<Note>
+  Only variables prefixed with `NEXT_PUBLIC_` are accessible in client-side code.
+</Note>
+
+## Security Best Practices
+
+<AccordionGroup>
+  <Accordion title="Never Commit Secrets">
+    - Add `.env` and `.env.local` to `.gitignore`
+    - Use `.env.example` files to document required variables without values
+    - Never hardcode API keys in source code
+  </Accordion>
+
+  <Accordion title="Rotate Keys Regularly">
+    - Rotate API keys every 3-6 months
+    - Immediately rotate if a key is accidentally exposed
+    - Use separate keys for development, staging, and production
+  </Accordion>
+
+  <Accordion title="Use Environment-Specific Keys">
+    - Separate Supabase projects for dev/staging/production
+    - Different API keys for each environment when possible
+    - Restrict production keys to production servers only
+  </Accordion>
+
+  <Accordion title="Principle of Least Privilege">
+    - Use anon key (not service role) in frontend
+    - Set up Row Level Security (RLS) policies in Supabase
+    - Limit API key permissions where possible
+  </Accordion>
+</AccordionGroup>
+
+## Validation and Troubleshooting
+
+### Verify Configuration
+
+Create a simple script to verify your configuration:
+
+<CodeGroup>
+```python Backend Verification
+# backend/verify_config.py
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+required_vars = [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "GROQ_API_KEY",
+    "LLAMAPARSE_API_KEY"
+]
+
+for var in required_vars:
+    value = os.getenv(var)
+    if value:
+        print(f"✓ {var}: {value[:20]}...")
+    else:
+        print(f"✗ {var}: NOT SET")
+```
+
+```typescript Frontend Verification
+// frontend/lib/verify-config.ts
+export function verifyConfig() {
+  const required = {
+    'NEXT_PUBLIC_SUPABASE_URL': process.env.NEXT_PUBLIC_SUPABASE_URL,
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    'NEXT_PUBLIC_FASTAPI_BACKEND_URL': process.env.NEXT_PUBLIC_FASTAPI_BACKEND_URL,
+    'NEXT_PUBLIC_GLADIA_API_KEY': process.env.NEXT_PUBLIC_GLADIA_API_KEY,
+  }
+
+  Object.entries(required).forEach(([key, value]) => {
+    if (!value) {
+      console.error(`Missing: ${key}`)
+    } else {
+      console.log(`✓ ${key}: ${value.substring(0, 20)}...`)
+    }
+  })
+}
+```
+</CodeGroup>
+
+### Common Configuration Issues
+
+<AccordionGroup>
+  <Accordion title="Variables Not Loading">
+    **Backend:**
+    - Ensure `.env` file is in the same directory as `app.py`
+    - Verify no typos in variable names
+    - Check that `load_dotenv()` is called before accessing variables
+    - Try `python-dotenv` instead of reading files manually
+
+    **Frontend:**
+    - Ensure file is named exactly `.env.local` (not `.env` or `env.local`)
+    - Restart the dev server after adding/changing variables
+    - Verify `NEXT_PUBLIC_` prefix for client-side variables
+  </Accordion>
+
+  <Accordion title="CORS Errors">
+    If you see CORS errors when frontend calls backend:
+
+    1. Verify `NEXT_PUBLIC_FASTAPI_BACKEND_URL` is correct
+    2. Check backend CORS configuration in `app.py`:
+    ```python
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:3000"],  # Add your frontend URL
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    ```
+    3. In production, update `allow_origins` to your frontend domain
+  </Accordion>
+
+  <Accordion title="Supabase Connection Failed">
+    - Verify URL format: `https://xyz.supabase.co` (no trailing slash)
+    - Check API keys for extra spaces or newlines
+    - Ensure Supabase project is not paused (free tier)
+    - Test connection directly in Supabase SQL Editor
+  </Accordion>
+
+  <Accordion title="API Key Invalid">
+    - Verify key is copied completely (no truncation)
+    - Check if key has expired or been revoked
+    - Ensure no quotes around the key value in .env
+    - Try regenerating the key in the provider's dashboard
+  </Accordion>
+</AccordionGroup>
+
+## Configuration Examples
+
+### Template Files
+
+Create example files for your team:
+
+<CodeGroup>
+```ini .env.example (Backend)
+# Supabase Configuration
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="your_service_role_key_here"
+
+# AI Service API Keys
+GROQ_API_KEY="your_groq_api_key_here"
+LLAMAPARSE_API_KEY="your_llamaparse_api_key_here"
+
+# Optional: Vector Database
+# WEAVIATE_API_KEY="your_weaviate_api_key"
+# WEAVIATE_REST_URL="your_weaviate_rest_url"
+```
+
+```ini .env.local.example (Frontend)
+# Supabase Client Configuration
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your_supabase_anon_key_here"
+
+# Backend API URL
+NEXT_PUBLIC_FASTAPI_BACKEND_URL="http://localhost:8000"
+
+# Gladia Speech-to-Text API
+NEXT_PUBLIC_GLADIA_API_KEY="your_gladia_api_key_here"
+```
+</CodeGroup>
+
+## Environment Variable Reference
+
+### Quick Reference Table
+
+| Variable | Component | Required | Description |
+|----------|-----------|----------|-------------|
+| `SUPABASE_URL` | Backend | Yes | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Backend | Yes | Admin key for backend operations |
+| `GROQ_API_KEY` | Backend | Yes | Groq LLM API key |
+| `LLAMAPARSE_API_KEY` | Backend | Yes | LlamaParse document parsing key |
+| `WEAVIATE_API_KEY` | Backend | No | Vector database key (future) |
+| `WEAVIATE_REST_URL` | Backend | No | Vector database URL (future) |
+| `NEXT_PUBLIC_SUPABASE_URL` | Frontend | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Frontend | Yes | Public key for client auth |
+| `NEXT_PUBLIC_FASTAPI_BACKEND_URL` | Frontend | Yes | Backend API endpoint |
+| `NEXT_PUBLIC_GLADIA_API_KEY` | Frontend | Yes | Speech-to-text API key |
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" icon="rocket" href="/getting-started/quickstart">
+    Quick start guide to get MedMitra running
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Explore all available API endpoints
+  </Card>
+  <Card title="Authentication" icon="shield" href="/guides/authentication">
+    Learn about authentication and user management
+  </Card>
+  <Card title="AI Agents" icon="brain" href="/ai-agents/overview">
+    Understand the multi-agent AI system
+  </Card>
+</CardGroup>

@@ -1,0 +1,160 @@
+---
+title: "Update Case"
+api: "PUT /cases/cases/{case_id}"
+description: "Update information for an existing medical case"
+---
+
+## Authentication
+
+This endpoint requires authentication. The user_id is automatically retrieved from the authenticated session.
+
+## Path Parameters
+
+<ParamField path="case_id" type="integer" required>
+  The unique identifier of the case to update
+</ParamField>
+
+## Request Body
+
+All fields are optional. Only include the fields you want to update.
+
+<ParamField body="patient_name" type="string">
+  Updated patient name
+</ParamField>
+
+<ParamField body="patient_age" type="integer">
+  Updated patient age in years
+</ParamField>
+
+<ParamField body="case_summary" type="string">
+  Updated case summary or doctor's notes
+</ParamField>
+
+<ParamField body="status" type="string">
+  Updated case status (e.g., "pending", "analyzing", "completed", "archived")
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message confirming the update
+</ResponseField>
+
+<ResponseField name="case" type="object">
+  The updated case object with all current values
+  
+  <ResponseField name="case.case_id" type="integer">
+    Unique identifier for the case
+  </ResponseField>
+  
+  <ResponseField name="case.user_id" type="string">
+    ID of the doctor who owns the case
+  </ResponseField>
+  
+  <ResponseField name="case.patient_name" type="string">
+    Updated patient name
+  </ResponseField>
+  
+  <ResponseField name="case.patient_age" type="integer">
+    Updated patient age
+  </ResponseField>
+  
+  <ResponseField name="case.patient_gender" type="string">
+    Patient gender (unchanged)
+  </ResponseField>
+  
+  <ResponseField name="case.case_summary" type="string">
+    Updated case summary
+  </ResponseField>
+  
+  <ResponseField name="case.status" type="string">
+    Updated case status
+  </ResponseField>
+  
+  <ResponseField name="case.created_at" type="string">
+    Original creation timestamp
+  </ResponseField>
+  
+  <ResponseField name="case.updated_at" type="string">
+    Timestamp of the latest update
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X PUT "https://api.medmitra.com/cases/cases/12345" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "case_summary": "Patient shows improvement after initial treatment. Follow-up recommended.",
+    "status": "completed"
+  }'
+```
+
+## Example Response
+
+```json
+{
+  "message": "Case updated successfully",
+  "case": {
+    "case_id": 12345,
+    "user_id": "b8acad4b-4944-4d66-b405-de70886e7248",
+    "patient_name": "John Doe",
+    "patient_age": 45,
+    "patient_gender": "male",
+    "case_summary": "Patient shows improvement after initial treatment. Follow-up recommended.",
+    "status": "completed",
+    "created_at": "2026-03-04T10:30:00Z",
+    "updated_at": "2026-03-04T15:20:00Z"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="400 Bad Request" type="error">
+  Invalid request data or no data provided for update
+  
+  ```json
+  {
+    "detail": "No data provided for update"
+  }
+  ```
+  
+  Or:
+  
+  ```json
+  {
+    "detail": "Supabase client error message"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="404 Not Found" type="error">
+  Case with the specified ID was not found
+  
+  ```json
+  {
+    "detail": "Case not found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error" type="error">
+  Server error during update operation
+  
+  ```json
+  {
+    "detail": "Internal server error: {error details}"
+  }
+  ```
+</ResponseField>
+
+## Notes
+
+- Only fields included in the request body will be updated
+- Fields with `null` values are excluded from the update
+- The `updated_at` timestamp is automatically set to the current time
+- You must be the owner of the case (user_id must match) to update it
+- Patient gender cannot be updated through this endpoint

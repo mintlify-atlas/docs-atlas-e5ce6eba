@@ -1,0 +1,173 @@
+---
+title: 'Medical Insights Model'
+description: 'AI-generated comprehensive medical insights and analysis'
+---
+
+## MedicalInsights
+
+The `MedicalInsights` model represents the complete AI-generated analysis output for a medical case, combining case summary, SOAP notes, diagnosis, and confidence scoring.
+
+### Fields
+
+<ResponseField name="case_summary" type="CaseSummary" required>
+  Comprehensive summary of the medical case
+  
+  <Expandable title="CaseSummary fields">
+    <ResponseField name="comprehensive_summary" type="string" required>
+      Detailed narrative summary of the entire case
+    </ResponseField>
+    
+    <ResponseField name="key_findings" type="List[string]" required>
+      List of the most important clinical findings
+    </ResponseField>
+    
+    <ResponseField name="patient_context" type="PatientData" required>
+      Patient demographic information
+    </ResponseField>
+    
+    <ResponseField name="doctor_notes" type="string">
+      Doctor's clinical observations
+    </ResponseField>
+    
+    <ResponseField name="lab_summary" type="string">
+      Summary of laboratory findings
+    </ResponseField>
+    
+    <ResponseField name="radiology_summary" type="string">
+      Summary of radiology findings
+    </ResponseField>
+    
+    <ResponseField name="confidence_score" type="float" required>
+      AI confidence score (0.0 to 1.0)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="soap_note" type="SOAPNote" required>
+  Structured clinical documentation in SOAP format
+  
+  <Expandable title="SOAPNote fields">
+    <ResponseField name="subjective" type="string" required>
+      Patient's reported symptoms and history
+    </ResponseField>
+    
+    <ResponseField name="objective" type="string" required>
+      Observable and measurable findings
+    </ResponseField>
+    
+    <ResponseField name="assessment" type="string" required>
+      Clinical assessment and interpretation
+    </ResponseField>
+    
+    <ResponseField name="plan" type="string" required>
+      Treatment and follow-up plan
+    </ResponseField>
+    
+    <ResponseField name="confidence_score" type="float" required>
+      AI confidence score (0.0 to 1.0)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="primary_diagnosis" type="Diagnosis" required>
+  Primary diagnosis with supporting evidence
+  
+  <Expandable title="Diagnosis fields">
+    <ResponseField name="primary_diagnosis" type="string" required>
+      Name of the primary diagnosis
+    </ResponseField>
+    
+    <ResponseField name="icd_code" type="string">
+      ICD-10 or ICD-11 code for the diagnosis
+    </ResponseField>
+    
+    <ResponseField name="description" type="string" required>
+      Detailed description of the diagnosis
+    </ResponseField>
+    
+    <ResponseField name="confidence_score" type="float" required>
+      AI confidence score (0.0 to 1.0)
+    </ResponseField>
+    
+    <ResponseField name="supporting_evidence" type="List[string]" required>
+      List of evidence supporting this diagnosis
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="overall_confidence_score" type="float" required>
+  Overall AI confidence score for the entire analysis (0.0 to 1.0)
+</ResponseField>
+
+<ResponseField name="generated_at" type="datetime" required>
+  Timestamp when the insights were generated (ISO 8601 format)
+</ResponseField>
+
+### Example
+
+```json
+{
+  "case_summary": {
+    "comprehensive_summary": "45-year-old male with acute coronary syndrome. Patient presented to ER with severe chest pain radiating to left arm. ECG shows ST-segment elevation. Cardiac biomarkers significantly elevated.",
+    "key_findings": [
+      "ST-segment elevation on ECG",
+      "Elevated troponin (2.5 ng/mL)",
+      "Chest pain with radiation to left arm",
+      "History of hypertension and hyperlipidemia"
+    ],
+    "patient_context": {
+      "name": "John Doe",
+      "age": 45,
+      "gender": "Male"
+    },
+    "doctor_notes": "Patient presents with acute chest pain, diaphoresis, and dyspnea. Pain started 2 hours ago.",
+    "lab_summary": "Troponin I: 2.5 ng/mL (elevated), CK-MB: 45 U/L (elevated), Lipid panel shows total cholesterol 280 mg/dL",
+    "radiology_summary": "ECG shows ST-segment elevation in leads II, III, aVF consistent with inferior STEMI",
+    "confidence_score": 0.95
+  },
+  "soap_note": {
+    "subjective": "45-year-old male reports severe crushing chest pain (9/10) that started 2 hours ago. Pain radiates to left arm and jaw. Associated with shortness of breath and sweating. No relief with rest.",
+    "objective": "Vital signs: BP 160/95, HR 102, RR 22, SpO2 94% on room air. Patient appears diaphoretic and in distress. ECG shows ST-segment elevation in inferior leads. Troponin I elevated at 2.5 ng/mL.",
+    "assessment": "Acute ST-elevation myocardial infarction (STEMI) - inferior wall. High-risk presentation with hemodynamic instability. Immediate cardiology intervention required.",
+    "plan": "1. Immediate cardiology consult for emergent cardiac catheterization. 2. Aspirin 325mg, Clopidogrel 600mg loading dose. 3. Heparin bolus and infusion. 4. Transfer to cath lab. 5. Continuous cardiac monitoring.",
+    "confidence_score": 0.96
+  },
+  "primary_diagnosis": {
+    "primary_diagnosis": "Acute ST-elevation myocardial infarction (STEMI)",
+    "icd_code": "I21.19",
+    "description": "Acute ST-elevation myocardial infarction involving the inferior wall with significant cardiac biomarker elevation and characteristic ECG changes.",
+    "confidence_score": 0.94,
+    "supporting_evidence": [
+      "ST-segment elevation in inferior leads (II, III, aVF)",
+      "Elevated troponin I (2.5 ng/mL)",
+      "Elevated CK-MB (45 U/L)",
+      "Classic presentation: chest pain radiating to left arm",
+      "Risk factors: hypertension, hyperlipidemia, age 45"
+    ]
+  },
+  "overall_confidence_score": 0.95,
+  "generated_at": "2024-03-04T14:30:45.123456"
+}
+```
+
+### Confidence Scoring
+
+The model includes multiple levels of confidence scoring:
+
+- **overall_confidence_score**: Overall confidence in the entire analysis (0.0-1.0)
+- **case_summary.confidence_score**: Confidence in the case summary
+- **soap_note.confidence_score**: Confidence in the SOAP note generation
+- **primary_diagnosis.confidence_score**: Confidence in the primary diagnosis
+
+All confidence scores are validated to be between 0.0 and 1.0 using Pydantic's `Field(ge=0.0, le=1.0)` constraint.
+
+### Timestamp Format
+
+The `generated_at` field uses ISO 8601 datetime format and is automatically populated with the current timestamp when the insights are generated.
+
+## Related Models
+
+- [Case Model](/api-reference/models/case) - Input case data structure
+- [SOAP Note Model](/api-reference/models/soap-note) - Detailed SOAP note structure
+- [Diagnosis Model](/api-reference/models/diagnosis) - Diagnosis information
+- [Patient Model](/api-reference/models/patient) - Patient demographic data

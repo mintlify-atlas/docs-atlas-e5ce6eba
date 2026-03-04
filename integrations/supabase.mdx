@@ -1,0 +1,432 @@
+---
+title: 'Supabase Integration'
+description: 'Configure Supabase for database, authentication, and file storage'
+icon: 'database'
+---
+
+Supabase serves as the backbone of MedMitra, providing PostgreSQL database, user authentication, and file storage capabilities.
+
+## Overview
+
+MedMitra uses Supabase for:
+
+- **PostgreSQL Database**: Store cases, files, AI insights, and user data
+- **Authentication**: Secure user login and session management
+- **Storage**: Store uploaded medical documents (lab reports, radiology images)
+- **Row Level Security (RLS)**: Protect patient data with fine-grained access control
+
+## Prerequisites
+
+- A Supabase account (sign up at [supabase.com](https://supabase.com))
+- Node.js and Python installed
+
+## Setup Instructions
+
+### 1. Create a Supabase Project
+
+1. Go to [supabase.com](https://supabase.com) and sign in
+2. Click "New Project"
+3. Fill in the project details:
+   - **Name**: MedMitra (or your preferred name)
+   - **Database Password**: Choose a strong password
+   - **Region**: Select closest to your users
+4. Click "Create new project"
+
+### 2. Get API Credentials
+
+Once your project is created:
+
+1. Go to **Project Settings** → **API**
+2. Copy the following values:
+   - **Project URL** (`https://xxxxx.supabase.co`)
+   - **anon public key** (for frontend)
+   - **service_role secret key** (for backend)
+
+<Warning>
+  The service role key bypasses Row Level Security. Only use it on the backend, never expose it to the client.
+</Warning>
+
+### 3. Configure Environment Variables
+
+#### Backend Configuration
+
+Add to `backend/.env`:
+
+```bash
+SUPABASE_URL="https://your-project.supabase.co"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+```
+
+#### Frontend Configuration
+
+Add to `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-public-key"
+```
+
+### 4. Set Up Database Schema
+
+MedMitra requires the following database tables:
+
+#### Cases Table
+
+```sql
+create table cases (
+  id bigint primary key generated always as identity,
+  case_id text unique not null,
+  doctor_id uuid references auth.users not null,
+  patient_name text not null,
+  patient_age int not null,
+  patient_gender text not null,
+  case_summary text,
+  status text default 'processing',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Enable RLS
+alter table cases enable row level security;
+
+-- Policy: Users can only access their own cases
+create policy "Users can view own cases"
+  on cases for select
+  using (auth.uid() = doctor_id);
+
+create policy "Users can insert own cases"
+  on cases for insert
+  with check (auth.uid() = doctor_id);
+
+create policy "Users can update own cases"
+  on cases for update
+  using (auth.uid() = doctor_id);
+```
+
+#### Case Files Table
+
+```sql
+create table case_files (
+  id bigint primary key generated always as identity,
+  file_id text unique not null,
+  case_id text references cases(case_id) not null,
+  file_name text not null,
+  file_type text not null,
+  file_size bigint not null,
+  file_url text not null,
+  file_category text not null, -- 'lab' or 'radiology'
+  ai_summary jsonb,
+  upload_date timestamptz default now()
+);
+
+alter table case_files enable row level security;
+
+create policy "Users can view files for their cases"
+  on case_files for select
+  using (
+    exists (
+      select 1 from cases
+      where cases.case_id = case_files.case_id
+      and cases.doctor_id = auth.uid()
+    )
+  );
+```
+
+#### AI Insights Table
+
+```sql
+create table ai_insights (
+  id bigint primary key generated always as identity,
+  case_id text references cases(case_id) unique not null,
+  
+  -- Case Summary
+  comprehensive_summary text,
+  key_findings jsonb,
+  patient_context jsonb,
+  doctor_notes text,
+  lab_summary text,
+  radiology_summary text,
+  case_summary_confidence_score float,
+  
+  -- SOAP Note
+  soap_subjective text,
+  soap_objective text,
+  soap_assessment text,
+  soap_plan text,
+  soap_confidence_score float,
+  
+  -- Primary Diagnosis
+  primary_diagnosis text,
+  icd_code text,
+  diagnosis_description text,
+  diagnosis_confidence_score float,
+  supporting_evidence jsonb,
+  
+  -- Metadata
+  overall_confidence_score float,
+  generated_at timestamptz,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table ai_insights enable row level security;
+
+create policy "Users can view insights for their cases"
+  on ai_insights for select
+  using (
+    exists (
+      select 1 from cases
+      where cases.case_id = ai_insights.case_id
+      and cases.doctor_id = auth.uid()
+    )
+  );
+```
+
+### 5. Set Up Storage Bucket
+
+1. Go to **Storage** in Supabase dashboard
+2. Click "Create bucket"
+3. Name it: `labdocs`
+4. Make it **public** (or configure policies as needed)
+5. Click "Create bucket"
+
+#### Storage Policies
+
+```sql
+-- Allow authenticated users to upload files
+create policy "Authenticated users can upload files"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'labdocs');
+
+-- Allow users to read their own files
+create policy "Users can view their own files"
+  on storage.objects for select
+  to authenticated
+  using (bucket_id = 'labdocs');
+```
+
+### 6. Enable Authentication
+
+MedMitra uses Supabase Auth for user management:
+
+1. Go to **Authentication** → **Providers**
+2. Enable **Email** provider
+3. Optionally enable **Google OAuth** or other providers
+4. Configure email templates under **Email Templates**
+
+## Backend Implementation
+
+MedMitra uses a custom Supabase client wrapper for database operations.
+
+### SupabaseCaseClient
+
+Location: `backend/supabase_client/supabase_client.py`
+
+```python
+from supabase import create_client, Client
+from config import SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL
+
+class SupabaseCaseClient:
+    def __init__(self, url=None, key=None):
+        self.url = url or SUPABASE_URL
+        self.key = key or SUPABASE_SERVICE_ROLE_KEY
+        self.supabase: Client = create_client(self.url, self.key)
+```
+
+### Key Methods
+
+<CodeGroup>
+
+```python Case Management
+# Create a new case
+await client.create_new_case(
+    case_id="case_123",
+    user_id="user_uuid",
+    patient_name="John Doe",
+    patient_age=45,
+    patient_gender="Male",
+    case_summary="Initial consultation"
+)
+
+# Get all cases for a doctor
+cases = await client.get_all_cases(user_id="user_uuid")
+
+# Get specific case
+case = await client.get_case_by_id(case_id="case_123")
+
+# Update case status
+await client.update_case_status(
+    case_id="case_123",
+    status="completed"
+)
+```
+
+```python File Management
+# Upload a file
+file_data = {
+    "file_name": "lab_report.pdf",
+    "file_type": "application/pdf",
+    "file_size": 1024000,
+    "file_url": "case_123/lab_report.pdf",
+    "file_category": "lab"
+}
+
+result = await client.upload_case_file(
+    file_id="file_456",
+    case_id="case_123",
+    file_data=file_data,
+    file_content=file_bytes
+)
+
+# Get files for a case
+files = await client.get_case_files(case_id="case_123")
+
+# Update file metadata (e.g., AI summary)
+await client.update_case_file_metadata(
+    file_id="file_456",
+    metadata={"ai_summary": {"findings": ["Normal CBC"]}}
+)
+```
+
+```python AI Insights
+# Upload AI insights
+insights = {
+    "case_summary": {
+        "comprehensive_summary": "Patient presents with...",
+        "key_findings": ["Finding 1", "Finding 2"],
+        "confidence_score": 0.92
+    },
+    "soap_note": {
+        "subjective": "Patient reports...",
+        "objective": "Vital signs...",
+        "assessment": "Likely diagnosis...",
+        "plan": "Treatment plan...",
+        "confidence_score": 0.89
+    },
+    "primary_diagnosis": {
+        "primary_diagnosis": "Type 2 Diabetes",
+        "icd_code": "E11.9",
+        "description": "Type 2 diabetes mellitus without complications",
+        "confidence_score": 0.95,
+        "supporting_evidence": ["HbA1c: 7.8%", "Fasting glucose: 145"]
+    }
+}
+
+await client.upload_ai_insights(
+    case_id="case_123",
+    insights=insights
+)
+
+# Get AI insights
+insights = await client.get_ai_insights_by_case_id(
+    case_id="case_123"
+)
+```
+
+</CodeGroup>
+
+## Frontend Implementation
+
+The frontend uses Supabase for authentication and client-side queries.
+
+### Initialize Supabase Client
+
+```typescript
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+```
+
+### Authentication Example
+
+```typescript
+// Sign up
+const { data, error } = await supabase.auth.signUp({
+  email: 'user@example.com',
+  password: 'secure-password'
+})
+
+// Sign in
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'user@example.com',
+  password: 'secure-password'
+})
+
+// Sign out
+await supabase.auth.signOut()
+
+// Get current user
+const { data: { user } } = await supabase.auth.getUser()
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Security">
+    - Always use Row Level Security (RLS) policies
+    - Never expose service role key to the client
+    - Use anon key for frontend, service role for backend
+    - Validate user permissions before database operations
+  </Accordion>
+  
+  <Accordion title="Performance">
+    - Use indexes on frequently queried columns (case_id, doctor_id)
+    - Batch operations when possible
+    - Use connection pooling in production
+    - Monitor database performance in Supabase dashboard
+  </Accordion>
+  
+  <Accordion title="Error Handling">
+    - Wrap database operations in try-catch blocks
+    - Use custom exception classes (SupabaseClientError)
+    - Log errors for debugging
+    - Provide user-friendly error messages
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Connection Issues">
+    **Error: Unable to connect to Supabase**
+    
+    - Verify SUPABASE_URL is correct
+    - Check API keys are valid
+    - Ensure network connectivity
+    - Check Supabase project status
+  </Accordion>
+  
+  <Accordion title="Authentication Errors">
+    **Error: User not authenticated**
+    
+    - Verify user is signed in
+    - Check session is valid
+    - Refresh auth token if expired
+    - Check RLS policies allow operation
+  </Accordion>
+  
+  <Accordion title="Storage Issues">
+    **Error: Failed to upload file**
+    
+    - Check storage bucket exists
+    - Verify storage policies allow uploads
+    - Ensure file size is within limits
+    - Check file path format
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Configure Groq" icon="bolt" href="/integrations/groq">
+    Set up AI inference for medical insights
+  </Card>
+  
+  <Card title="Set up LlamaParse" icon="file-pdf" href="/integrations/llamaparse">
+    Configure PDF document parsing
+  </Card>
+</CardGroup>

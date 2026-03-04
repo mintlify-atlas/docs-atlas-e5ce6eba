@@ -1,33 +1,177 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: 'API Introduction'
+description: 'Learn about the MedMitra REST API for medical case management'
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+## Welcome to the MedMitra API
 
-## Welcome
+The MedMitra API is a RESTful service that powers the MedMitra medical case management platform. It provides endpoints for managing patient cases, uploading medical documents, and accessing AI-powered insights for diagnosis support.
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
+## Base URL
 
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+The API is built with FastAPI and runs on:
 
-## Authentication
+```
+http://localhost:8000
+```
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+For production deployments, replace with your production domain.
+
+## API Version
+
+Current version: **1.0.0**
+
+The API version follows semantic versioning. Breaking changes will result in a major version bump.
+
+## API Architecture
+
+### Technology Stack
+
+- **Framework**: FastAPI (Python)
+- **Database**: Supabase (PostgreSQL)
+- **Storage**: Supabase Storage for file uploads
+- **Authentication**: Supabase Auth with JWT tokens
+- **AI Processing**: Background task processing with async workers
+
+### Core Capabilities
+
+The MedMitra API enables you to:
+
+- **Case Management**: Create, retrieve, update, and delete patient cases
+- **Document Processing**: Upload and manage lab reports and radiology images
+- **AI Insights**: Access automated case summaries, SOAP notes, and diagnostic suggestions
+- **File Management**: Handle multi-file uploads with categorization
+- **Background Processing**: AI analysis runs asynchronously after case creation
+
+## Request Format
+
+### Content Types
+
+The API accepts different content types depending on the endpoint:
+
+- **JSON**: `application/json` for most GET requests and data queries
+- **Form Data**: `multipart/form-data` for file uploads and case creation
+- **URL Parameters**: Query parameters for filtering and pagination
+
+### Headers
+
+All authenticated requests require:
+
+```http
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: application/json
+```
+
+For file uploads:
+
+```http
+Authorization: Bearer YOUR_JWT_TOKEN
+Content-Type: multipart/form-data
+```
+
+## Response Format
+
+### Success Responses
+
+Successful responses return JSON with appropriate HTTP status codes:
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "message": "Case created successfully",
+  "case": {
+    "case_id": "123e4567-e89b-12d3-a456-426614174000",
+    "patient_name": "John Doe",
+    "patient_age": 45,
+    "status": "processing",
+    "created_at": "2026-03-04T10:30:00Z"
   }
-]
+}
 ```
+
+### Error Responses
+
+Error responses include detailed error messages:
+
+```json
+{
+  "detail": "Case with ID abc123 not found"
+}
+```
+
+### Status Codes
+
+The API uses standard HTTP status codes:
+
+| Code | Description |
+|------|-------------|
+| 200  | Success - Request completed successfully |
+| 201  | Created - Resource created successfully |
+| 400  | Bad Request - Invalid parameters or request body |
+| 401  | Unauthorized - Missing or invalid authentication |
+| 404  | Not Found - Resource does not exist |
+| 500  | Internal Server Error - Server-side error |
+
+## API Features
+
+### Background Processing
+
+When you create a case with files, the API:
+
+1. Immediately creates the case record (returns 201)
+2. Uploads files to storage
+3. Starts AI processing in the background
+4. Updates the case with insights when analysis completes
+
+This allows fast API responses while computationally expensive AI analysis runs asynchronously.
+
+### File Categories
+
+Uploaded files are categorized as:
+
+- **lab**: Laboratory reports, blood tests, pathology results
+- **radiology**: X-rays, CT scans, MRI images, ultrasounds
+
+This categorization helps the AI agents process documents appropriately.
+
+### Case Status Flow
+
+```
+processing → completed (or failed)
+```
+
+- **processing**: Case is created, AI analysis is running
+- **completed**: Analysis finished successfully
+- **failed**: Analysis encountered an error
+
+## Rate Limits
+
+Currently, the API does not enforce rate limits. However, for production deployments, consider implementing:
+
+- Per-user rate limiting
+- File size restrictions
+- Concurrent request limits
+
+## API Playground
+
+Test API endpoints using:
+
+- **FastAPI Docs**: Available at `http://localhost:8000/docs` (Swagger UI)
+- **ReDoc**: Available at `http://localhost:8000/redoc` (alternative documentation)
+
+These interactive docs allow you to test endpoints directly from your browser.
+
+## Getting Started
+
+To start using the MedMitra API:
+
+1. **Set up authentication** - See the [Authentication](/api-reference/authentication) guide
+2. **Create your first case** - Use the [Create Case](/api-reference/endpoints/create-case) endpoint
+3. **Retrieve AI insights** - Query the [Get Case by ID](/api-reference/endpoints/get-case-by-id) endpoint
+
+## Need Help?
+
+For support and questions:
+
+- Check the endpoint documentation for detailed examples
+- Review error messages in responses
+- Consult the [GitHub repository](https://github.com/Spyrosigma/Medmitra) for code examples

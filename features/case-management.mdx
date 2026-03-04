@@ -1,0 +1,258 @@
+---
+title: 'Case Management'
+description: 'Comprehensive case management system for medical records'
+icon: 'folder-medical'
+---
+
+## Overview
+
+MedMitra's case management system provides a centralized platform for healthcare providers to create, organize, and track patient cases. Each case contains patient information, medical documents, and AI-generated insights all in one place.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Create Cases" icon="plus">
+    Quickly create new patient cases with demographic information and initial assessments
+  </Card>
+  <Card title="Document Upload" icon="file-upload">
+    Attach lab reports and radiology images directly to patient cases
+  </Card>
+  <Card title="Case Tracking" icon="list-check">
+    Monitor case status from creation through analysis completion
+  </Card>
+  <Card title="Retrieve Insights" icon="brain">
+    Access AI-generated insights, SOAP notes, and diagnostic recommendations
+  </Card>
+</CardGroup>
+
+## Creating a New Case
+
+Cases are created through the `/cases/create_case` endpoint with the following information:
+
+### Required Information
+
+- **Patient Name**: Full name of the patient
+- **Patient Age**: Age in years
+- **Patient Gender**: Gender identity
+- **User ID**: Healthcare provider's identifier
+
+### Optional Information
+
+- **Case Summary**: Initial clinical notes or chief complaint
+- **Lab Files**: Laboratory reports (PDF format)
+- **Radiology Files**: Medical imaging files
+
+### Example Workflow
+
+```python
+# Case creation with file uploads
+POST /cases/create_case
+
+Form Data:
+- user_id: "b8acad4b-4944-4d66-b405-de70886e7248"
+- patient_name: "Jane Daniel"
+- patient_age: 31
+- patient_gender: "Female"
+- case_summary: "Patient presents with respiratory symptoms"
+- lab_files: [blood_test.pdf, urinalysis.pdf]
+- radiology_files: [chest_xray.jpg]
+```
+
+The system automatically:
+1. Generates a unique case ID (UUID)
+2. Uploads files to secure storage
+3. Initiates background AI analysis
+4. Returns case details with file references
+
+Source: `backend/routes/case.py:43-122`
+
+## Retrieving Cases
+
+### Get All Cases
+
+Retrieve all cases for a specific healthcare provider:
+
+```python
+GET /cases/all_cases?user_id={user_id}
+```
+
+Returns a list of all cases with basic information and status.
+
+Source: `backend/routes/case.py:131-143`
+
+### Get Specific Case
+
+Retrieve detailed information about a specific case:
+
+```python
+GET /cases/cases/{case_id}
+```
+
+Returns:
+- Complete case details
+- All attached files with metadata
+- AI-generated insights (if analysis is complete)
+
+Source: `backend/routes/case.py:146-165`
+
+## Case Status Flow
+
+Cases progress through the following states:
+
+<Steps>
+  <Step title="Created">
+    Case is initialized with patient information
+  </Step>
+  <Step title="Processing">
+    Documents are being analyzed by AI agents
+  </Step>
+  <Step title="Completed">
+    AI analysis finished, insights available
+  </Step>
+  <Step title="Failed">
+    Error occurred during processing (requires review)
+  </Step>
+</Steps>
+
+## File Management
+
+### Supported File Types
+
+**Lab Documents**
+- PDF reports
+- Text-based laboratory results
+- Stored with extracted text for analysis
+
+**Radiology Files**
+- JPEG, PNG medical images
+- DICOM files
+- Processed with vision AI for findings extraction
+
+### File Storage Structure
+
+Files are organized by category and case:
+
+```
+{category}_files/{case_id}/{filename}
+```
+
+Example:
+- `lab_files/917034a2-c50e-48f4-8289-963ad7b0ad58/blood_test.pdf`
+- `radiology_files/917034a2-c50e-48f4-8289-963ad7b0ad58/chest_xray.jpg`
+
+Source: `backend/routes/case.py:68-96`
+
+## Updating Cases
+
+Cases can be updated with new information:
+
+```python
+PUT /cases/cases/{case_id}
+
+Payload:
+{
+  "patient_name": "Updated Name",
+  "case_summary": "Updated clinical notes",
+  "status": "completed"
+}
+```
+
+<Note>
+Only non-null fields in the update request are modified. Existing data is preserved.
+</Note>
+
+Source: `backend/routes/case.py:171-199`
+
+## Background Processing
+
+When a case is created, the system automatically triggers background AI analysis:
+
+<CodeGroup>
+```python Case Creation
+# System automatically calls agentic_process in background
+background_tasks.add_task(
+    agentic_process,
+    case_id=case_id,
+    user_id=user_id,
+    patient_name=patient_name,
+    patient_age=patient_age,
+    patient_gender=patient_gender,
+    case_summary=case_summary,
+    lab_files=lab_files_data,
+    radiology_files=radiology_files_data,
+)
+```
+</CodeGroup>
+
+This ensures:
+- Non-blocking API responses
+- Efficient resource utilization
+- Real-time status updates
+
+Source: `backend/routes/case.py:103-113`, `backend/agentic.py:16-124`
+
+## Data Models
+
+The case management system uses structured data models:
+
+### CaseInput Model
+
+```python
+class CaseInput(BaseModel):
+    case_id: str
+    patient_data: PatientData
+    doctor_case_summary: str
+    lab_files: Optional[List[ProcessedFile]] = []
+    radiology_files: Optional[List[ProcessedFile]] = []
+```
+
+### PatientData Model
+
+```python
+class PatientData(BaseModel):
+    name: str
+    age: int
+    gender: str
+```
+
+Source: `backend/models/data_models.py:8-49`
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Organizing Cases">
+    - Use descriptive case summaries for quick identification
+    - Tag cases with relevant keywords
+    - Regular status checks for pending analyses
+  </Accordion>
+  
+  <Accordion title="File Uploads">
+    - Ensure PDFs are text-readable (not scanned images)
+    - Use high-resolution images for radiology files
+    - Upload all relevant documents before creating the case
+  </Accordion>
+  
+  <Accordion title="Error Handling">
+    - Monitor case status after creation
+    - Check failed cases for processing errors
+    - Retry with corrected files if analysis fails
+  </Accordion>
+</AccordionGroup>
+
+## Security Considerations
+
+- All case data is associated with a user ID for access control
+- Files are stored in secure cloud storage with authenticated URLs
+- Case retrieval requires proper user authentication
+- Patient data follows healthcare privacy standards
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Document Processing" icon="file-lines" href="/features/document-processing">
+    Learn how uploaded files are processed
+  </Card>
+  <Card title="AI Analysis" icon="microchip" href="/features/ai-analysis">
+    Understand the AI analysis workflow
+  </Card>
+</CardGroup>

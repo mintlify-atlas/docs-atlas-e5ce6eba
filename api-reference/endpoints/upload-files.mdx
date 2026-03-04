@@ -1,0 +1,133 @@
+---
+title: "Upload File"
+api: "POST /cases/upload"
+description: "Upload a single file to an existing medical case"
+---
+
+## Authentication
+
+This endpoint requires authentication. The user_id is automatically retrieved from the authenticated session.
+
+## Request Body
+
+This endpoint accepts `multipart/form-data` for file upload.
+
+<ParamField body="case_id" type="integer" required>
+  The ID of the case to which the file should be attached
+</ParamField>
+
+<ParamField body="file" type="file" required>
+  The file to upload (PDF, image, or other medical document)
+</ParamField>
+
+## Response
+
+<ResponseField name="message" type="string">
+  Success message indicating the file was uploaded
+</ResponseField>
+
+<ResponseField name="file" type="object">
+  The uploaded file object with metadata
+  
+  <ResponseField name="file.file_id" type="string">
+    Unique identifier for the uploaded file
+  </ResponseField>
+  
+  <ResponseField name="file.case_id" type="integer">
+    ID of the case the file is attached to
+  </ResponseField>
+  
+  <ResponseField name="file.file_name" type="string">
+    Original filename
+  </ResponseField>
+  
+  <ResponseField name="file.file_type" type="string">
+    MIME type of the file
+  </ResponseField>
+  
+  <ResponseField name="file.file_size" type="integer">
+    File size in bytes
+  </ResponseField>
+  
+  <ResponseField name="file.file_url" type="string">
+    URL path to access the file
+  </ResponseField>
+  
+  <ResponseField name="file.uploaded_at" type="string">
+    Timestamp when the file was uploaded
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X POST "https://api.medmitra.com/cases/upload" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "case_id=12345" \
+  -F "file=@/path/to/document.pdf"
+```
+
+## Example Response
+
+```json
+{
+  "message": "File uploaded successfully",
+  "file": {
+    "file_id": "f9e8d7c6-5432-10fe-dcba-0987654321ab",
+    "case_id": 12345,
+    "file_name": "document.pdf",
+    "file_type": "application/pdf",
+    "file_size": 1234567,
+    "file_url": "/files/12345/document.pdf",
+    "uploaded_at": "2026-03-04T14:30:00Z"
+  }
+}
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found" type="error">
+  Case with the specified ID was not found or does not belong to the user
+  
+  ```json
+  {
+    "detail": "Case not found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="400 Bad Request" type="error">
+  Invalid request data or file upload error
+  
+  ```json
+  {
+    "detail": "Error message describing the issue"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error" type="error">
+  Server error during file upload
+  
+  ```json
+  {
+    "detail": "Internal server error: {error details}"
+  }
+  ```
+</ResponseField>
+
+## Supported File Types
+
+The following file types are commonly supported:
+
+- **Documents**: PDF (.pdf), Word (.doc, .docx), Text (.txt)
+- **Images**: JPEG (.jpg, .jpeg), PNG (.png), DICOM (.dcm)
+- **Medical Reports**: Lab reports, radiology reports, prescriptions
+
+## Notes
+
+- Files are stored in cloud storage (Supabase Storage)
+- The endpoint verifies that the case exists and belongs to the authenticated user before allowing upload
+- Maximum file size limits may apply (check your server configuration)
+- File metadata is stored in the database for quick retrieval
+- Uploaded files can be retrieved using the [Get Files](/api-reference/endpoints/get-files) endpoint

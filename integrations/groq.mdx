@@ -1,0 +1,433 @@
+---
+title: 'Groq Integration'
+description: 'Ultra-fast LLM inference for medical insights and radiology analysis'
+icon: 'bolt'
+---
+
+Groq provides blazingly fast inference for large language models, powering MedMitra's AI-driven medical analysis and vision capabilities.
+
+## Overview
+
+MedMitra uses Groq for:
+
+- **Medical Insights Generation**: Case summaries, SOAP notes, and diagnoses
+- **Radiology Image Analysis**: Vision AI using LLaVA model
+- **Structured Data Extraction**: JSON-formatted medical information
+- **Real-time Processing**: Fast inference for responsive user experience
+
+## Why Groq?
+
+- **Speed**: 10-100x faster than traditional GPU inference
+- **Cost-effective**: Competitive pricing per token
+- **Multiple Models**: Access to Llama 3, LLaVA, and other open models
+- **Reliability**: High uptime and consistent performance
+
+## Prerequisites
+
+- A Groq account (sign up at [console.groq.com](https://console.groq.com))
+- Python 3.9+ for backend integration
+
+## Setup Instructions
+
+### 1. Get a Groq API Key
+
+1. Visit [console.groq.com](https://console.groq.com)
+2. Sign up or log in to your account
+3. Navigate to **API Keys** section
+4. Click **Create API Key**
+5. Copy your API key (keep it secure!)
+
+<Warning>
+  Groq API keys have access to your account. Never commit them to version control or share them publicly.
+</Warning>
+
+### 2. Configure Environment Variables
+
+Add to `backend/.env`:
+
+```bash
+GROQ_API_KEY="gsk_your_groq_api_key_here"
+```
+
+### 3. Install Groq SDK
+
+The Groq SDK is already included in the project dependencies:
+
+```bash
+pip install groq
+pip install langchain-groq
+```
+
+## Models Used in MedMitra
+
+### Llama 3.3 70B Versatile
+
+**Purpose**: Medical insights generation, SOAP notes, diagnosis
+
+```python
+from langchain_groq import ChatGroq
+
+llm = ChatGroq(
+    model_name="llama-3.3-70b-versatile",
+    temperature=0.7
+)
+```
+
+**Characteristics**:
+- 70 billion parameters
+- Excellent at structured output
+- Strong medical knowledge
+- Fast inference on Groq
+
+### LLaVA Vision Model
+
+**Purpose**: Radiology image analysis (X-rays, MRIs, CT scans)
+
+```python
+from groq import Groq
+
+client = Groq(api_key=GROQ_API_KEY)
+
+completion = client.chat.completions.create(
+    model="meta-llama/llama-4-scout-17b-16e-instruct",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "Analyze this radiology image"},
+                {"type": "image_url", "image_url": {"url": image_url}}
+            ]
+        }
+    ]
+)
+```
+
+**Characteristics**:
+- Multimodal (text + images)
+- Specialized for vision tasks
+- Can identify medical findings
+- Returns structured JSON
+
+## Implementation Examples
+
+### LLM Manager
+
+Location: `backend/utils/llm_utils.py`
+
+The `LLMManager` class provides a reusable interface for Groq LLM operations:
+
+```python
+from langchain_groq import ChatGroq
+from langchain_core.prompts import ChatPromptTemplate
+
+class LLMManager:
+    def __init__(self, model_name="llama-3.3-70b-versatile", temperature=0.7):
+        self.llm = ChatGroq(model_name=model_name, temperature=temperature)
+
+    async def generate_response(
+        self, 
+        system_prompt: str, 
+        user_input: str, 
+        prompt_variables: dict = None
+    ) -> dict:
+        """Generate response with optional prompt variable substitution"""
+        
+        if prompt_variables:
+            formatted_system_prompt = system_prompt.format(**prompt_variables)
+        else:
+            formatted_system_prompt = system_prompt
+            
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", formatted_system_prompt),
+            ("user", "{input}")
+        ])
+        
+        chain = prompt | self.llm
+        result = chain.invoke({"input": user_input})
+        
+        # Extract JSON from response
+        return extract_json_from_string(result.content)
+```
+
+### Vision Agent
+
+Location: `backend/agents/vision_agent.py`
+
+The Vision Agent analyzes radiology images using Groq's multimodal capabilities:
+
+```python
+from groq import Groq
+from config import GROQ_API_KEY
+
+client = Groq(api_key=GROQ_API_KEY)
+
+async def image_extraction(image_url: str):
+    """Analyze a radiology image using Groq's vision model"""
+    
+    completion = client.chat.completions.create(
+        model="meta-llama/llama-4-scout-17b-16e-instruct",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": RADIOLOGY_ANALYSIS_PROMPT
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_url}
+                    }
+                ]
+            }
+        ],
+        temperature=1,
+        max_completion_tokens=1024,
+        top_p=1,
+        stream=False
+    )
+
+    # Extract structured JSON from response
+    result = extract_json_from_string(completion.choices[0].message.content)
+    return result
+```
+
+### Medical Insights Agent
+
+The Medical Insights Agent uses LangGraph with Groq to generate comprehensive medical analysis:
+
+```python
+from langchain_groq import ChatGroq
+from langgraph.graph import StateGraph
+
+class MedicalInsightsAgent:
+    def __init__(self):
+        self.llm = ChatGroq(
+            model_name="llama-3.3-70b-versatile",
+            temperature=0.7
+        )
+        self.graph = self._build_graph()
+    
+    def _build_graph(self):
+        workflow = StateGraph(MedicalState)
+        
+        workflow.add_node("aggregate_data", self.aggregate_data)
+        workflow.add_node("generate_summary", self.generate_summary)
+        workflow.add_node("generate_soap", self.generate_soap)
+        workflow.add_node("generate_diagnosis", self.generate_diagnosis)
+        workflow.add_node("save_results", self.save_results)
+        
+        # Define edges
+        workflow.add_edge("aggregate_data", "generate_summary")
+        workflow.add_edge("generate_summary", "generate_soap")
+        workflow.add_edge("generate_soap", "generate_diagnosis")
+        workflow.add_edge("generate_diagnosis", "save_results")
+        
+        return workflow.compile()
+```
+
+## Prompt Engineering
+
+MedMitra uses specialized prompts for medical analysis:
+
+### Radiology Analysis Prompt
+
+```python
+RADIOLOGY_ANALYSIS_PROMPT = """
+You are an expert radiologist AI assistant. Analyze the provided medical image 
+and extract key findings.
+
+Provide your analysis in the following JSON format:
+{
+    "findings": ["finding 1", "finding 2", ...],
+    "impression": "Brief impression of the image",
+    "summary": "Detailed summary of observations",
+    "abnormalities": ["abnormality 1", "abnormality 2", ...],
+    "confidence": 0.95
+}
+
+Focus on:
+- Anatomical structures visible
+- Any abnormalities or pathologies
+- Image quality and clarity
+- Clinical relevance of findings
+"""
+```
+
+### Case Summary Prompt
+
+```python
+CASE_SUMMARY_PROMPT = """
+You are a medical AI assistant helping doctors synthesize patient information.
+
+Given:
+- Doctor's notes: {doctor_notes}
+- Lab report data: {lab_data}
+- Radiology findings: {radiology_data}
+
+Generate a comprehensive case summary including:
+1. Patient context (age, gender, presenting complaints)
+2. Key findings from all sources
+3. Relevant medical history
+4. Summary of diagnostic results
+
+Return as JSON:
+{
+    "comprehensive_summary": "...",
+    "key_findings": [...],
+    "patient_context": {...},
+    "confidence_score": 0.92
+}
+"""
+```
+
+## Configuration Options
+
+### Temperature Settings
+
+```python
+# Creative/varied output (case summaries)
+llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0.7)
+
+# Focused/deterministic output (diagnoses)
+llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=0.3)
+
+# Highly creative (not recommended for medical use)
+llm = ChatGroq(model_name="llama-3.3-70b-versatile", temperature=1.0)
+```
+
+### Token Limits
+
+```python
+completion = client.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=messages,
+    max_completion_tokens=2048,  # Limit response length
+    top_p=1,
+    stream=False
+)
+```
+
+### Streaming Responses
+
+```python
+# For real-time UI updates
+stream = client.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=messages,
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content:
+        print(chunk.choices[0].delta.content, end="")
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Prompt Engineering">
+    - Be specific about output format (JSON preferred)
+    - Include examples in prompts for better results
+    - Use system prompts to set context and constraints
+    - Test prompts with various inputs
+  </Accordion>
+  
+  <Accordion title="Error Handling">
+    - Wrap API calls in try-catch blocks
+    - Handle rate limits gracefully (429 errors)
+    - Implement retry logic with exponential backoff
+    - Validate JSON responses before using
+  </Accordion>
+  
+  <Accordion title="Cost Optimization">
+    - Monitor token usage in Groq console
+    - Cache responses when appropriate
+    - Use appropriate max_tokens limits
+    - Batch similar requests when possible
+  </Accordion>
+  
+  <Accordion title="Medical Safety">
+    - Always review AI-generated diagnoses
+    - Include confidence scores in outputs
+    - Log all AI interactions for audit trail
+    - Never use AI as sole diagnostic tool
+  </Accordion>
+</AccordionGroup>
+
+## Rate Limits & Quotas
+
+Groq has the following limits (as of 2024):
+
+- **Free Tier**: 30 requests/minute, 14,400 requests/day
+- **Paid Tier**: Higher limits based on plan
+- **Token Limits**: Varies by model
+
+<Tip>
+  Monitor your usage in the Groq console to avoid hitting rate limits. Implement exponential backoff for production deployments.
+</Tip>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="API Key Issues">
+    **Error: Invalid API key**
+    
+    - Verify GROQ_API_KEY in .env file
+    - Check key hasn't been revoked
+    - Ensure no extra spaces in key
+    - Regenerate key if necessary
+  </Accordion>
+  
+  <Accordion title="Rate Limiting">
+    **Error: 429 Too Many Requests**
+    
+    - Implement exponential backoff
+    - Add delays between requests
+    - Upgrade to paid tier for higher limits
+    - Cache responses to reduce API calls
+  </Accordion>
+  
+  <Accordion title="Vision Model Issues">
+    **Error: Image analysis failed**
+    
+    - Ensure image URL is publicly accessible
+    - Check image format is supported (JPG, PNG)
+    - Verify image size is within limits
+    - Check internet connectivity
+  </Accordion>
+  
+  <Accordion title="JSON Parsing Errors">
+    **Error: Invalid JSON in response**
+    
+    - Use extract_json_from_string utility
+    - Adjust prompt to emphasize JSON format
+    - Lower temperature for more structured output
+    - Add validation in prompt
+  </Accordion>
+</AccordionGroup>
+
+## Performance Metrics
+
+Typical Groq performance for MedMitra:
+
+- **Case Summary Generation**: 1-2 seconds
+- **SOAP Note Generation**: 1-3 seconds
+- **Diagnosis Generation**: 2-4 seconds
+- **Radiology Image Analysis**: 2-5 seconds
+
+<Info>
+  Groq's LPU (Language Processing Unit) technology provides significantly faster inference than traditional GPU-based solutions.
+</Info>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="LlamaParse Integration" icon="file-pdf" href="/integrations/llamaparse">
+    Set up PDF document parsing
+  </Card>
+  
+  <Card title="Medical Prompts" icon="message" href="/ai-tools/prompts">
+    Explore medical prompt templates
+  </Card>
+</CardGroup>

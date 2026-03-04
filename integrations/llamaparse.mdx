@@ -1,0 +1,393 @@
+---
+title: 'LlamaParse Integration'
+description: 'Intelligent PDF parsing for extracting structured data from medical documents'
+icon: 'file-pdf'
+---
+
+LlamaParse is an advanced document parsing service that intelligently extracts text and structure from PDF lab reports, preserving formatting and medical data.
+
+## Overview
+
+MedMitra uses LlamaParse for:
+
+- **Lab Report Parsing**: Extract text from PDF medical reports
+- **Structure Preservation**: Maintain tables, headers, and formatting
+- **Multi-page Processing**: Handle complex medical documents
+- **Markdown Output**: Clean, structured text output
+
+## Why LlamaParse?
+
+- **Medical Document Optimized**: Better than generic PDF parsers
+- **Table Extraction**: Preserves lab values in table format
+- **Fast Processing**: Async processing for multiple pages
+- **Reliable**: Handles various PDF formats and layouts
+
+## Prerequisites
+
+- A LlamaCloud account (sign up at [cloud.llamaindex.ai](https://cloud.llamaindex.ai))
+- Python 3.9+ for backend integration
+
+## Setup Instructions
+
+### 1. Get a LlamaParse API Key
+
+1. Visit [cloud.llamaindex.ai](https://cloud.llamaindex.ai)
+2. Sign up or log in to your account
+3. Navigate to **API Keys** section
+4. Click **Generate API Key**
+5. Copy your API key
+
+<Info>
+  LlamaParse offers a free tier with limited credits. Monitor your usage in the dashboard.
+</Info>
+
+### 2. Configure Environment Variables
+
+Add to `backend/.env`:
+
+```bash
+LLAMAPARSE_API_KEY="llx_your_llamaparse_api_key_here"
+```
+
+### 3. Install LlamaParse SDK
+
+The LlamaParse SDK is included in project dependencies:
+
+```bash
+pip install llama-cloud-services
+```
+
+## Implementation
+
+### Parser Configuration
+
+Location: `backend/parsers/parse.py`
+
+```python
+from llama_cloud_services import LlamaParse
+from config import LLAMAPARSE_API_KEY
+
+# Initialize parser with configuration
+parser = LlamaParse(
+    api_key=LLAMAPARSE_API_KEY,
+    num_workers=4,          # Parallel processing workers
+    verbose=False,          # Disable verbose logging
+    language="en",          # English language
+    result_type="markdown"  # Output format
+)
+```
+
+### Configuration Options
+
+<ParamField path="api_key" type="string" required>
+  Your LlamaParse API key from LlamaCloud
+</ParamField>
+
+<ParamField path="num_workers" type="integer" default="4">
+  Number of parallel workers for processing pages
+</ParamField>
+
+<ParamField path="verbose" type="boolean" default="false">
+  Enable detailed logging for debugging
+</ParamField>
+
+<ParamField path="language" type="string" default="en">
+  Language of the documents (ISO 639-1 code)
+</ParamField>
+
+<ParamField path="result_type" type="string" default="markdown">
+  Output format: `markdown`, `text`, or `json`
+</ParamField>
+
+### Async PDF Processing
+
+```python
+async def process_pdf_async(file_path: str) -> dict:
+    """
+    Async function to process a single PDF file and extract page-wise content.
+
+    Args:
+        file_path: Path to the PDF file (local or URL)
+
+    Returns:
+        Dictionary containing extracted text and status
+    """
+    try:
+        # Parse the PDF asynchronously
+        results = await parser.aparse(file_path)
+        
+        # Extract text from all pages
+        text = ""
+        for page in results.pages:
+            text += page.md + "\n"  # Markdown content
+            text += "=" * 80 + "\n"  # Page separator
+        
+        return {
+            "text": text,
+            "status": "success"
+        }
+
+    except Exception as e:
+        return {
+            "text": "",
+            "status": "error",
+            "error": str(e)
+        }
+```
+
+## Usage in MedMitra
+
+### Document Upload Flow
+
+1. **User uploads PDF** → Saved to Supabase Storage
+2. **Get file URL** → Public URL from Supabase
+3. **Parse PDF** → LlamaParse extracts text
+4. **Store results** → Text saved to database
+5. **AI Analysis** → Groq processes extracted text
+
+### Example: Processing Lab Report
+
+```python
+from parsers.parse import process_pdf_async
+from supabase_client import SupabaseCaseClient
+
+supabase = SupabaseCaseClient()
+
+async def process_lab_report(case_id: str, file_id: str, file_url: str):
+    """
+    Process a lab report PDF and store extracted text.
+    """
+    # Parse the PDF
+    result = await process_pdf_async(file_url)
+    
+    if result["status"] == "success":
+        # Store extracted text in file metadata
+        await supabase.update_case_file_metadata(
+            file_id=file_id,
+            metadata={
+                "extracted_text": result["text"],
+                "parse_status": "completed"
+            }
+        )
+        
+        print(f"Successfully parsed lab report for case {case_id}")
+        return result["text"]
+    else:
+        print(f"Error parsing PDF: {result['error']}")
+        raise Exception(result["error"])
+```
+
+## Output Format
+
+### Markdown Output
+
+LlamaParse returns structured markdown that preserves:
+
+```markdown
+# Lab Report - Complete Blood Count (CBC)
+
+**Patient**: John Doe
+**Date**: 2024-03-04
+**Lab**: Medical Center Laboratory
+
+## Test Results
+
+| Test | Result | Reference Range | Unit | Flag |
+|------|--------|-----------------|------|------|
+| WBC | 7.5 | 4.0-11.0 | K/uL | Normal |
+| RBC | 4.8 | 4.5-5.5 | M/uL | Normal |
+| Hemoglobin | 14.2 | 13.5-17.5 | g/dL | Normal |
+| Hematocrit | 42 | 38-50 | % | Normal |
+| Platelets | 250 | 150-400 | K/uL | Normal |
+
+## Interpretation
+
+All values within normal reference ranges.
+
+================================================================================
+```
+
+### Advantages of Markdown Format
+
+- **Structured**: Headers, tables, and lists preserved
+- **Readable**: Easy to display in UI or process with AI
+- **Parseable**: Can be further processed for specific data
+- **Convertible**: Easy to convert to HTML or other formats
+
+## Integration with AI Workflow
+
+Extracted text is used in the Medical Insights Agent:
+
+```python
+# 1. Parse lab report
+lab_text = await process_pdf_async(lab_report_url)
+
+# 2. Combine with other data
+context = {
+    "doctor_notes": case.doctor_notes,
+    "lab_data": lab_text,
+    "radiology_data": radiology_summaries
+}
+
+# 3. Generate AI insights using Groq
+insights = await medical_agent.generate_insights(context)
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="File Handling">
+    - Upload PDFs to Supabase Storage first
+    - Use public URLs for LlamaParse access
+    - Store extracted text in database for caching
+    - Keep original PDFs for reference
+  </Accordion>
+  
+  <Accordion title="Error Handling">
+    - Always check parse status before using results
+    - Implement retry logic for failed parses
+    - Log parsing errors for debugging
+    - Have fallback for unparseable documents
+  </Accordion>
+  
+  <Accordion title="Performance">
+    - Use async processing for multiple files
+    - Set appropriate num_workers for your use case
+    - Cache extracted text to avoid re-parsing
+    - Monitor LlamaParse usage and credits
+  </Accordion>
+  
+  <Accordion title="Data Quality">
+    - Validate extracted text structure
+    - Check for missing tables or sections
+    - Handle multi-page reports properly
+    - Preserve page boundaries for context
+  </Accordion>
+</AccordionGroup>
+
+## Supported PDF Types
+
+LlamaParse works well with:
+
+- **Lab Reports**: CBC, Chemistry panels, Lipid panels
+- **Pathology Reports**: Biopsy results, Cytology
+- **Radiology Reports**: Text-based findings and impressions
+- **Medical Records**: Patient history, Discharge summaries
+- **Test Results**: Any structured medical test data
+
+<Warning>
+  LlamaParse is optimized for text-based PDFs. Scanned images may require OCR preprocessing.
+</Warning>
+
+## Cost & Usage Limits
+
+### Free Tier
+
+- 1,000 pages/month free
+- No credit card required
+- Basic support
+
+### Paid Tiers
+
+- Pay-as-you-go: $0.003 per page
+- Volume discounts available
+- Priority support
+
+<Tip>
+  Monitor your usage in the LlamaCloud dashboard. Set up alerts to avoid unexpected costs.
+</Tip>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="API Key Issues">
+    **Error: Invalid API key**
+    
+    - Verify LLAMAPARSE_API_KEY in .env file
+    - Check key hasn't expired
+    - Ensure no extra spaces in key
+    - Regenerate key from dashboard
+  </Accordion>
+  
+  <Accordion title="Parsing Failures">
+    **Error: Failed to parse PDF**
+    
+    - Check PDF is not corrupted
+    - Verify file URL is accessible
+    - Ensure PDF is not password-protected
+    - Check file size is within limits
+    - Try with verbose=True for debugging
+  </Accordion>
+  
+  <Accordion title="Empty Results">
+    **Error: Extracted text is empty**
+    
+    - PDF may be image-based (needs OCR)
+    - Check if PDF has extractable text
+    - Verify PDF is not encrypted
+    - Try different result_type
+  </Accordion>
+  
+  <Accordion title="Rate Limiting">
+    **Error: Rate limit exceeded**
+    
+    - Reduce num_workers
+    - Add delays between requests
+    - Upgrade to paid tier
+    - Implement request queuing
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Configuration
+
+### Custom Parser Settings
+
+```python
+parser = LlamaParse(
+    api_key=LLAMAPARSE_API_KEY,
+    num_workers=8,                    # More workers for faster processing
+    verbose=True,                     # Enable debugging
+    language="en",
+    result_type="markdown",
+    
+    # Advanced options
+    parsing_instruction="Focus on extracting lab values and reference ranges",
+    skip_diagonal_text=True,          # Skip watermarks
+    invalidate_cache=False,           # Use cached results if available
+    do_not_cache=False,               # Cache results for future use
+    continuous_mode=True,             # Better for multi-page documents
+)
+```
+
+### Batch Processing
+
+```python
+async def process_multiple_pdfs(file_urls: list) -> list:
+    """
+    Process multiple PDFs in parallel.
+    """
+    tasks = [process_pdf_async(url) for url in file_urls]
+    results = await asyncio.gather(*tasks)
+    return results
+```
+
+## Alternative Parsing Options
+
+If LlamaParse doesn't meet your needs:
+
+- **PyMuPDF**: Free, but less intelligent structure extraction
+- **PyPDF2**: Simple, but limited table support
+- **Tabula**: Good for tables, but requires Java
+- **AWS Textract**: Enterprise option with OCR
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Gladia Integration" icon="microphone" href="/integrations/gladia">
+    Set up speech-to-text for medical dictation
+  </Card>
+  
+  <Card title="Medical AI Agents" icon="robot" href="/ai-tools/medical-insights-agent">
+    Learn how parsed data is used by AI agents
+  </Card>
+</CardGroup>

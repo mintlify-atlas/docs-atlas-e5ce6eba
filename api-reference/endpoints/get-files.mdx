@@ -1,0 +1,140 @@
+---
+title: "Get Case Files"
+api: "GET /cases/files/{case_id}"
+description: "Retrieve all files associated with a specific medical case"
+---
+
+## Authentication
+
+This endpoint requires authentication. The user_id is automatically retrieved from the authenticated session.
+
+## Path Parameters
+
+<ParamField path="case_id" type="integer" required>
+  The unique identifier of the case whose files to retrieve
+</ParamField>
+
+## Response
+
+<ResponseField name="files" type="array">
+  Array of file objects associated with the case
+  
+  <ResponseField name="files[].file_id" type="string">
+    Unique identifier for the file
+  </ResponseField>
+  
+  <ResponseField name="files[].case_id" type="integer">
+    ID of the case the file belongs to
+  </ResponseField>
+  
+  <ResponseField name="files[].file_name" type="string">
+    Original filename
+  </ResponseField>
+  
+  <ResponseField name="files[].file_type" type="string">
+    MIME type of the file
+  </ResponseField>
+  
+  <ResponseField name="files[].file_size" type="integer">
+    File size in bytes
+  </ResponseField>
+  
+  <ResponseField name="files[].file_url" type="string">
+    URL path to access the file
+  </ResponseField>
+  
+  <ResponseField name="files[].file_category" type="string">
+    Category of the file ("lab" or "radiology")
+  </ResponseField>
+  
+  <ResponseField name="files[].uploaded_at" type="string">
+    ISO 8601 timestamp when the file was uploaded
+  </ResponseField>
+</ResponseField>
+
+## Example Request
+
+```bash
+curl -X GET "https://api.medmitra.com/cases/files/12345" \
+  -H "Authorization: Bearer YOUR_TOKEN"
+```
+
+## Example Response
+
+```json
+{
+  "files": [
+    {
+      "file_id": "f1e2d3c4-5678-90ab-cdef-1234567890ab",
+      "case_id": 12345,
+      "file_name": "lab_report.pdf",
+      "file_type": "application/pdf",
+      "file_size": 245678,
+      "file_url": "lab_files/a1b2c3d4-5678-90ab-cdef-1234567890ab/lab_report.pdf",
+      "file_category": "lab",
+      "uploaded_at": "2026-03-04T10:30:15Z"
+    },
+    {
+      "file_id": "a9b8c7d6-5432-10fe-dcba-0987654321ab",
+      "case_id": 12345,
+      "file_name": "chest_xray.jpg",
+      "file_type": "image/jpeg",
+      "file_size": 1234567,
+      "file_url": "radiology_files/a1b2c3d4-5678-90ab-cdef-1234567890ab/chest_xray.jpg",
+      "file_category": "radiology",
+      "uploaded_at": "2026-03-04T10:31:20Z"
+    },
+    {
+      "file_id": "c8d7e6f5-4321-09ed-cba9-876543210fed",
+      "case_id": 12345,
+      "file_name": "ecg_report.pdf",
+      "file_type": "application/pdf",
+      "file_size": 98765,
+      "file_url": "/files/12345/ecg_report.pdf",
+      "file_category": "lab",
+      "uploaded_at": "2026-03-04T11:15:45Z"
+    }
+  ]
+}
+```
+
+## Error Responses
+
+<ResponseField name="404 Not Found" type="error">
+  Case with the specified ID was not found or does not belong to the user
+  
+  ```json
+  {
+    "detail": "Case not found"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="400 Bad Request" type="error">
+  Invalid request or Supabase client error
+  
+  ```json
+  {
+    "detail": "Error message describing the issue"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 Internal Server Error" type="error">
+  Server error during file retrieval
+  
+  ```json
+  {
+    "detail": "Internal server error: {error details}"
+  }
+  ```
+</ResponseField>
+
+## Notes
+
+- This endpoint returns all files associated with a specific case
+- Files are categorized as either "lab" or "radiology" documents
+- The endpoint verifies that the case exists and belongs to the authenticated user
+- Files are returned in the order they were uploaded
+- Empty array is returned if the case has no files
+- Use the `file_url` to download or display the actual file content

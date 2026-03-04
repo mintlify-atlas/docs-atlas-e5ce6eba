@@ -1,0 +1,309 @@
+---
+title: "Creating Cases"
+description: "Step-by-step guide to creating and managing patient cases in MedMitra"
+icon: "folder-plus"
+---
+
+Creating a new patient case in MedMitra is a straightforward process that allows you to capture essential patient information and upload relevant medical documents for AI-powered analysis.
+
+## Overview
+
+A case in MedMitra represents a complete patient record, including:
+
+- Patient demographic information (name, age, gender)
+- Doctor's case summary and notes
+- Lab reports (PDF format)
+- Radiology images (JPEG, PNG, DICOM)
+- AI-generated insights and analysis
+
+## Creating a New Case
+
+<Steps>
+  <Step title="Navigate to Cases">
+    From your dashboard, click on **Cases** in the navigation menu or click the **New Case** button on the dashboard.
+    
+    You'll be directed to the cases list page where you can view all existing cases.
+  </Step>
+
+  <Step title="Click New Case">
+    On the cases page, click the **New Case** button in the top-right corner.
+    
+    <Frame>
+      <img src="/images/new-case-button.png" alt="New Case Button" />
+    </Frame>
+    
+    This will take you to the case creation form.
+  </Step>
+
+  <Step title="Enter Patient Information">
+    Fill in the required patient details:
+    
+    - **Patient Name** (required): Enter the full name of the patient
+    - **Age** (required): Enter the patient's age in years (0-150)
+    - **Gender** (required): Select from Male, Female, or Transgender
+    
+    <Warning>
+      All three fields are required to create a case. The form will not submit without them.
+    </Warning>
+    
+    <CodeGroup>
+    ```typescript Example Patient Data
+    {
+      name: "John Doe",
+      age: "45",
+      gender: "Male"
+    }
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Add Case Summary">
+    In the **Case Summary** section, provide detailed information about the patient's condition:
+    
+    - Chief complaint
+    - Medical history
+    - Current symptoms
+    - Preliminary observations
+    - Any relevant context
+    
+    <Tip>
+      A comprehensive case summary helps the AI generate more accurate insights. Include as much relevant clinical information as possible.
+    </Tip>
+    
+    The case summary field supports:
+    - Free-form text
+    - Multiple paragraphs
+    - Medical terminology
+    - Voice-to-text input (coming soon with Gladia STT integration)
+  </Step>
+
+  <Step title="Upload Medical Documents" icon="cloud-arrow-up">
+    MedMitra supports two categories of medical documents:
+    
+    ### Lab Reports
+    
+    - **Accepted formats**: PDF, CSV
+    - **File size limit**: 10 MB per file
+    - **Examples**: Blood tests, urinalysis, metabolic panels
+    
+    Click the **Lab Reports** upload area or drag and drop files directly.
+    
+    ### Radiology Images
+    
+    - **Accepted formats**: JPEG, PNG, DICOM (.dcm)
+    - **File size limit**: 50 MB per file
+    - **Examples**: X-rays, CT scans, MRI images
+    
+    Click the **Radiology Images** upload area or drag and drop files directly.
+    
+    <Note>
+      You can upload multiple files in each category. Files will be processed automatically after case creation.
+    </Note>
+  </Step>
+
+  <Step title="Review Your Information">
+    Before submitting, review all the information you've entered:
+    
+    - Patient demographics are correct
+    - Case summary is comprehensive
+    - All relevant files are uploaded
+    - File types are correct for each category
+    
+    You can remove any uploaded file by clicking the **X** button next to it.
+  </Step>
+
+  <Step title="Submit the Case">
+    Once you're satisfied with all the information, click the **Create Case** button at the bottom of the form.
+    
+    <Info>
+      The button will be disabled if required fields are missing or if a submission is already in progress.
+    </Info>
+    
+    After submission:
+    1. The case is created in the database
+    2. Files are uploaded to secure cloud storage
+    3. AI processing begins automatically in the background
+    4. You're redirected to the cases list
+  </Step>
+</Steps>
+
+## What Happens After Creation?
+
+Once you create a case, MedMitra's AI agents immediately begin processing:
+
+<Steps>
+  <Step title="Initial Processing">
+    - Case record is created with status: `processing`
+    - Files are securely uploaded to Supabase Storage
+    - Processing task is queued in the background
+  </Step>
+
+  <Step title="Document Analysis">
+    - PDF lab reports are parsed using LlamaParse
+    - Radiology images are analyzed by the Vision Agent
+    - Structured data is extracted from all documents
+  </Step>
+
+  <Step title="AI Insights Generation">
+    The Medical Insights Agent generates:
+    - Comprehensive case summary
+    - Structured SOAP notes
+    - Primary diagnosis with ICD-10 code
+    - Supporting evidence from documents
+  </Step>
+
+  <Step title="Completion">
+    - Case status updates to: `completed`
+    - All insights are saved to the database
+    - You can now view the complete analysis
+  </Step>
+</Steps>
+
+## Case Status Indicators
+
+Cases can have different statuses:
+
+<CardGroup cols={3}>
+  <Card title="Processing" icon="spinner">
+    AI agents are analyzing the documents and generating insights
+  </Card>
+  
+  <Card title="Completed" icon="check-circle">
+    Analysis is complete and insights are ready to view
+  </Card>
+  
+  <Card title="Failed" icon="exclamation-triangle">
+    An error occurred during processing (rare)
+  </Card>
+</CardGroup>
+
+## Form Validation
+
+The case creation form includes built-in validation:
+
+| Field | Validation Rules |
+|-------|------------------|
+| Patient Name | Required, cannot be empty |
+| Age | Required, must be a number between 0-150 |
+| Gender | Required, must select from dropdown |
+| Case Summary | Optional, but recommended |
+| Lab Reports | Optional, must be PDF or CSV, max 10MB |
+| Radiology Images | Optional, must be JPG/PNG/DICOM, max 50MB |
+
+## API Implementation
+
+Behind the scenes, case creation calls the FastAPI backend:
+
+<CodeGroup>
+
+```typescript Frontend API Call
+const result = await caseApi.create(caseData, userId);
+```
+
+```python Backend Endpoint
+@router.post("/create_case")
+async def create_case(
+    background_tasks: BackgroundTasks,
+    user_id: str = Form(...),
+    patient_name: str = Form(...),
+    patient_age: int = Form(...),
+    patient_gender: str = Form(...),
+    case_summary: Optional[str] = Form(None),
+    lab_files: Optional[List[UploadFile]] = File(None),
+    radiology_files: Optional[List[UploadFile]] = File(None),
+):
+    # Create case and process files
+    # Queue background AI processing
+    return JSONResponse(status_code=201, content={...})
+```
+
+</CodeGroup>
+
+The endpoint can be found in `backend/routes/case.py:43-127`.
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Writing Effective Case Summaries">
+    **Include:**
+    - Chief complaint and presenting symptoms
+    - Relevant medical history
+    - Current medications
+    - Vital signs and physical exam findings
+    - Timeline of symptom onset
+    
+    **Avoid:**
+    - Overly vague descriptions
+    - Missing critical context
+    - Unrelated information
+  </Accordion>
+
+  <Accordion title="Preparing Documents for Upload">
+    **Best practices:**
+    - Ensure PDFs are text-readable (not scanned images without OCR)
+    - Use high-quality radiology images
+    - Remove any patient identifiers if required by privacy policies
+    - Organize multiple files by date or test type
+    
+    **File naming:**
+    - Use descriptive names (e.g., `blood-test-2024-03-01.pdf`)
+    - Include dates in filenames when relevant
+    - Avoid special characters
+  </Accordion>
+
+  <Accordion title="Ensuring Accurate AI Analysis">
+    **Tips for better results:**
+    - Upload all relevant documents at once
+    - Provide complete case summaries
+    - Use standard medical terminology
+    - Include lab reference ranges when available
+    - Upload clear, well-lit radiology images
+  </Accordion>
+</AccordionGroup>
+
+## Troubleshooting
+
+<Warning>
+  **Common Issues and Solutions:**
+</Warning>
+
+### File Upload Failures
+
+- **Problem**: File won't upload
+- **Solutions**:
+  - Check file size is within limits (10MB for labs, 50MB for radiology)
+  - Verify file format is supported
+  - Check your internet connection
+  - Try a different browser
+
+### Missing Required Fields
+
+- **Problem**: Can't submit the form
+- **Solution**: Ensure Patient Name, Age, and Gender are all filled in
+
+### Form Freezes During Submission
+
+- **Problem**: Form becomes unresponsive
+- **Solutions**:
+  - Wait for the submission to complete (may take time with large files)
+  - Check browser console for errors
+  - Refresh and try again
+  - Contact support if issue persists
+
+## Next Steps
+
+After creating a case:
+
+<CardGroup cols={2}>
+  <Card title="View AI Insights" icon="brain" href="/guides/viewing-insights">
+    Learn how to review the AI-generated analysis
+  </Card>
+  
+  <Card title="Upload More Documents" icon="file-arrow-up" href="/guides/uploading-documents">
+    Add additional files to an existing case
+  </Card>
+</CardGroup>
+
+<Tip>
+  Cases are automatically saved as you work. You can safely navigate away and return later to complete the form.
+</Tip>

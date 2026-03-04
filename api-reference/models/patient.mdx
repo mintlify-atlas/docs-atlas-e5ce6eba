@@ -1,0 +1,64 @@
+---
+title: 'Patient Model'
+description: 'Patient demographic and identification data structure'
+---
+
+## PatientData
+
+The `PatientData` model contains essential demographic and identification information for a patient in the MedMitra system.
+
+### Fields
+
+<ResponseField name="name" type="string" required>
+  Patient's full legal name
+</ResponseField>
+
+<ResponseField name="age" type="integer" required>
+  Patient's current age in years
+</ResponseField>
+
+<ResponseField name="gender" type="string" required>
+  Patient's gender identity or biological sex
+</ResponseField>
+
+### Example
+
+```json
+{
+  "name": "John Doe",
+  "age": 45,
+  "gender": "Male"
+}
+```
+
+### Usage in Other Models
+
+The `PatientData` model is embedded in several other data structures:
+
+- **CaseInput**: Contains patient data as part of the complete case information
+- **CaseSummary**: Includes patient context for reference in the summary
+
+### Validation Rules
+
+- **name**: Required string field, cannot be empty
+- **age**: Required integer field, must be a valid positive integer
+- **gender**: Required string field, typically values like "Male", "Female", "Other", etc.
+
+### Example Usage in Case Context
+
+```json
+{
+  "case_id": "CASE-2024-001",
+  "patient_data": {
+    "name": "Jane Smith",
+    "age": 32,
+    "gender": "Female"
+  },
+  "doctor_case_summary": "Patient presents with recurring migraines..."
+}
+```
+
+## Related Models
+
+- [Case Model](/api-reference/models/case) - Complete case data structure that includes patient information
+- [Insights Model](/api-reference/models/insights) - Medical insights that reference patient data through case summary

@@ -1,0 +1,323 @@
+---
+title: 'Authentication'
+description: 'Learn how to authenticate API requests using Supabase Auth'
+---
+
+## Overview
+
+MedMitra uses **Supabase Authentication** to secure API endpoints. All authenticated requests require a valid JWT (JSON Web Token) obtained through the Supabase authentication flow.
+
+<Warning>
+  Keep your authentication tokens secure. Never expose them in client-side code repositories or public forums.
+</Warning>
+
+## Authentication Flow
+
+The authentication system follows the OAuth 2.0 Bearer Token pattern:
+
+1. User authenticates with Supabase (email/password, OAuth, etc.)
+2. Supabase returns a JWT access token
+3. Include the token in the `Authorization` header for API requests
+4. Backend validates the token with Supabase
+
+## Supabase Configuration
+
+### Environment Variables
+
+The backend requires these environment variables:
+
+```bash
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+### Frontend Configuration
+
+The frontend uses:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_public_key
+```
+
+<Note>
+  The backend uses the **service role key** for admin operations, while the frontend uses the **anon key** for user authentication.
+</Note>
+
+## Getting an Access Token
+
+### Using the Supabase JavaScript Client
+
+For web applications, use the Supabase client library:
+
+```javascript
+import { createClient } from '@supabase/supabase-js'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+)
+
+// Sign in with email and password
+const { data, error } = await supabase.auth.signInWithPassword({
+  email: 'doctor@example.com',
+  password: 'secure_password'
+})
+
+if (data.session) {
+  const accessToken = data.session.access_token
+  console.log('Access token:', accessToken)
+}
+```
+
+### Using the REST API Directly
+
+You can also authenticate directly through Supabase's REST API:
+
+```bash
+curl -X POST 'https://your-project.supabase.co/auth/v1/token?grant_type=password' \
+  -H "apikey: YOUR_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "doctor@example.com",
+    "password": "secure_password"
+  }'
+```
+
+Response:
+
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 3600,
+  "refresh_token": "v1.MRjJBwIhNO...",
+  "user": {
+    "id": "b8acad4b-4944-4d66-b405-de70886e7248",
+    "email": "doctor@example.com"
+  }
+}
+```
+
+## Making Authenticated Requests
+
+### Including the Token
+
+Include the access token in the `Authorization` header:
+
+```bash
+curl -X GET 'http://localhost:8000/cases/all_cases?user_id=USER_ID' \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### JavaScript Example
+
+```javascript
+const supabase = createClient(url, key)
+const { data: { session } } = await supabase.auth.getSession()
+
+if (session) {
+  const response = await fetch('http://localhost:8000/cases/all_cases?user_id=' + session.user.id, {
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`
+    }
+  })
+  
+  const data = await response.json()
+  console.log('Cases:', data.cases)
+}
+```
+
+### Python Example
+
+```python
+import requests
+
+access_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+user_id = "b8acad4b-4944-4d66-b405-de70886e7248"
+
+headers = {
+    "Authorization": f"Bearer {access_token}"
+}
+
+response = requests.get(
+    f"http://localhost:8000/cases/all_cases?user_id={user_id}",
+    headers=headers
+)
+
+cases = response.json()
+print(cases)
+```
+
+## User ID Management
+
+### Current Implementation
+
+In the current version, most endpoints require `user_id` as a parameter:
+
+```javascript
+// Example: Creating a case
+const formData = new FormData()
+formData.append('user_id', session.user.id)  // Required field
+formData.append('patient_name', 'John Doe')
+formData.append('patient_age', 45)
+```
+
+<Info>
+  The `user_id` associates cases with specific doctors. Each doctor can only access their own cases.
+</Info>
+
+### Hardcoded Placeholder
+
+Some endpoints have a placeholder function for future middleware:
+
+```python
+# routes/case.py:39-41
+async def get_current_user_id() -> str:
+    return "b8acad4b-4944-4d66-b405-de70886e7248"
+```
+
+This will be replaced with proper token validation middleware in production.
+
+## Token Management
+
+### Token Expiration
+
+Supabase access tokens expire after 1 hour by default. Handle expiration by:
+
+1. **Checking expiration**: Monitor the `expires_in` field
+2. **Refreshing tokens**: Use the refresh token before expiration
+3. **Re-authenticating**: Prompt user to sign in again if refresh fails
+
+### Refresh Token Example
+
+```javascript
+const { data, error } = await supabase.auth.refreshSession({
+  refresh_token: currentSession.refresh_token
+})
+
+if (data.session) {
+  const newAccessToken = data.session.access_token
+  // Use the new token for subsequent requests
+}
+```
+
+### Cross-Tab Authentication Sync
+
+MedMitra includes a custom `AuthSync` class that synchronizes authentication across browser tabs:
+
+```typescript
+import { AuthSync } from '@/lib/auth-sync'
+
+// Sign out from all tabs
+const authSync = AuthSync.getInstance()
+await authSync.triggerSignOut()
+```
+
+This ensures users are signed out simultaneously across all open tabs.
+
+## Security Best Practices
+
+### For Frontend Applications
+
+1. **Never store tokens in localStorage** - Use `httpOnly` cookies when possible
+2. **Use HTTPS in production** - Encrypt token transmission
+3. **Implement token refresh** - Maintain valid sessions without re-authentication
+4. **Clear tokens on logout** - Remove all authentication data
+
+### For Backend Services
+
+1. **Validate all tokens** - Verify JWT signatures with Supabase
+2. **Use service role key securely** - Only on backend, never expose to frontend
+3. **Implement rate limiting** - Prevent abuse and brute force attacks
+4. **Log authentication failures** - Monitor for suspicious activity
+
+## Row-Level Security (RLS)
+
+Supabase enforces Row-Level Security policies to ensure:
+
+- Doctors can only access their own cases
+- Users can only modify data they own
+- Service role key bypasses RLS for admin operations
+
+### Example RLS Policy
+
+```sql
+-- Policy: Doctors can only view their own cases
+CREATE POLICY "Doctors view own cases"
+  ON cases FOR SELECT
+  USING (doctor_id = auth.uid());
+```
+
+## Authentication Errors
+
+### Common Error Responses
+
+**401 Unauthorized**
+```json
+{
+  "detail": "Invalid authentication credentials"
+}
+```
+
+**403 Forbidden**
+```json
+{
+  "detail": "Insufficient permissions to access this resource"
+}
+```
+
+### Debugging Authentication Issues
+
+1. **Verify token format**: Should be `Bearer <token>` in header
+2. **Check token expiration**: Tokens expire after 1 hour
+3. **Validate user ID**: Ensure user_id matches authenticated user
+4. **Review CORS settings**: Backend allows all origins in development
+
+## Testing Authentication
+
+### Manual Testing with cURL
+
+```bash
+# 1. Get access token
+TOKEN=$(curl -X POST 'https://your-project.supabase.co/auth/v1/token?grant_type=password' \
+  -H "apikey: $ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"doctor@example.com","password":"password"}' \
+  | jq -r '.access_token')
+
+# 2. Use token in request
+curl -X GET "http://localhost:8000/cases/all_cases?user_id=USER_ID" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Automated Testing
+
+For integration tests, use a test user:
+
+```python
+import pytest
+from supabase import create_client
+
+@pytest.fixture
+def auth_token():
+    supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    response = supabase.auth.sign_in_with_password({
+        "email": "test@example.com",
+        "password": "test_password"
+    })
+    return response.session.access_token
+
+def test_get_cases(auth_token):
+    headers = {"Authorization": f"Bearer {auth_token}"}
+    response = requests.get("http://localhost:8000/cases/all_cases", headers=headers)
+    assert response.status_code == 200
+```
+
+## Next Steps
+
+Now that you understand authentication:
+
+1. **Create your first case** - See [Create Case](/api-reference/endpoints/create-case)
+2. **Retrieve cases** - Learn about [Get All Cases](/api-reference/endpoints/get-cases)
+3. **Upload documents** - Check [Upload Files](/api-reference/endpoints/upload-files)

@@ -1,0 +1,94 @@
+---
+title: Introduction to MedMitra
+description: AI-powered medical case management system designed to empower healthcare professionals with intelligent document analysis and clinical decision support
+---
+
+## What is MedMitra?
+
+MedMitra is an innovative AI-powered medical case management system designed to empower healthcare professionals. The platform streamlines the processing of patient data, intelligently analyzes diverse medical documents including lab reports and radiology images, and generates comprehensive medical insights.
+
+By leveraging advanced AI agents for document parsing, image analysis, and diagnosis support, MedMitra optimizes clinical workflows and provides invaluable assistance in clinical decision-making.
+
+<Note>
+MedMitra is a medical AI assistant tool designed to support healthcare professionals. All AI-generated insights should be reviewed by qualified medical practitioners before use in clinical decision-making.
+</Note>
+
+## Who is MedMitra for?
+
+MedMitra is built for healthcare professionals who want to:
+
+<CardGroup cols={2}>
+  <Card title="Streamline documentation" icon="file-medical">
+    Reduce time spent on manual documentation with AI-powered SOAP note generation and case summaries
+  </Card>
+  <Card title="Analyze medical documents" icon="microscope">
+    Automatically extract key information from lab reports and radiology images using advanced AI
+  </Card>
+  <Card title="Support clinical decisions" icon="stethoscope">
+    Receive AI-assisted diagnostic suggestions with ICD-10 codes and confidence scores
+  </Card>
+  <Card title="Manage patient cases" icon="folder-open">
+    Organize and track patient cases with comprehensive medical data in one centralized platform
+  </Card>
+</CardGroup>
+
+## How it works
+
+MedMitra uses a sophisticated multi-agent AI system to process and analyze medical data:
+
+1. **Upload documents** - Securely upload PDF lab reports and radiology images (JPG, PNG) for your patient case
+
+2. **AI processing** - Specialized AI agents analyze your documents:
+   - **LlamaParse** extracts structured data from PDF lab reports
+   - **Vision AI** analyzes radiology images using advanced multimodal models
+
+3. **Medical insights** - The Medical Insights Agent uses LangGraph to orchestrate a comprehensive analysis workflow:
+   - Generates holistic case summaries integrating all patient data
+   - Creates structured SOAP notes following clinical documentation standards
+   - Suggests primary diagnoses with ICD-10 codes and supporting evidence
+
+4. **Review & use** - Access all AI-generated insights through an intuitive, responsive interface
+
+## Key technologies
+
+MedMitra is built on a modern, robust technology stack:
+
+### Backend
+- **FastAPI** - High-performance API framework
+- **LangGraph** - AI workflow orchestration
+- **Groq** - Fast LLM inference (Llama 3.3)
+- **LlamaParse** - Intelligent PDF parsing
+- **Supabase** - PostgreSQL database, authentication, and storage
+
+### Frontend
+- **Next.js** - Server-rendered React framework with Turbopack
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Modern utility-first styling
+- **Shadcn/ui** - Polished component library
+- **Gladia** - Real-time speech-to-text transcription
+
+## Security & compliance
+
+MedMitra takes data security seriously:
+
+- **Secure authentication** - Powered by Supabase Auth with user-based access control
+- **Data encryption** - All sensitive medical data is encrypted at rest
+- **User isolation** - Each user can only access their own patient cases
+- **CORS protection** - Configured for secure web integration
+
+<Warning>
+While MedMitra implements security best practices, you should consult with your organization's compliance team to ensure it meets all relevant healthcare regulations (HIPAA, GDPR, etc.) for your use case.
+</Warning>
+
+## Get started
+
+Ready to start using MedMitra? Check out our setup guide or explore the key features in the next section.
+
+<CardGroup cols={2}>
+  <Card title="Features overview" icon="sparkles" href="/features">
+    Explore MedMitra's powerful AI-driven capabilities
+  </Card>
+  <Card title="Installation guide" icon="rocket" href="/getting-started/installation">
+    Set up MedMitra locally or deploy to production
+  </Card>
+</CardGroup>
