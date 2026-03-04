@@ -1,0 +1,132 @@
+{
+  "projectType": "saas",
+  "projectName": "MedMitra",
+  "projectDescription": "AI-powered medical case management system that helps healthcare professionals analyze patient data, process medical documents, and generate clinical insights",
+  "theme": "almond",
+  "primaryColor": "#4693cb",
+  "lightColor": "#77828a",
+  "darkColor": "#c3d0da",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "introduction",
+              "features"
+            ]
+          },
+          {
+            "group": "Getting Started",
+            "pages": [
+              "getting-started/quickstart",
+              "getting-started/installation",
+              "getting-started/configuration"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/case-management",
+              "features/document-processing",
+              "features/ai-analysis",
+              "features/soap-notes",
+              "features/diagnosis-support"
+            ]
+          },
+          {
+            "group": "User Guide",
+            "pages": [
+              "guides/creating-cases",
+              "guides/uploading-documents",
+              "guides/viewing-insights",
+              "guides/authentication"
+            ]
+          },
+          {
+            "group": "AI Agents",
+            "pages": [
+              "ai-agents/overview",
+              "ai-agents/medical-insights-agent",
+              "ai-agents/vision-agent",
+              "ai-agents/workflow"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "api-reference/introduction",
+              "api-reference/authentication"
+            ]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api-reference/endpoints/create-case",
+              "api-reference/endpoints/get-cases",
+              "api-reference/endpoints/get-case-by-id",
+              "api-reference/endpoints/update-case",
+              "api-reference/endpoints/delete-case",
+              "api-reference/endpoints/upload-files",
+              "api-reference/endpoints/get-files"
+            ]
+          },
+          {
+            "group": "Data Models",
+            "pages": [
+              "api-reference/models/case",
+              "api-reference/models/patient",
+              "api-reference/models/insights",
+              "api-reference/models/soap-note",
+              "api-reference/models/diagnosis"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "External Services",
+            "pages": [
+              "integrations/overview",
+              "integrations/supabase",
+              "integrations/groq",
+              "integrations/llamaparse",
+              "integrations/gladia"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Patient case management with comprehensive data tracking",
+    "AI-powered document analysis for lab reports and radiology images",
+    "Automatic SOAP note generation",
+    "Primary diagnosis support with ICD-10 codes",
+    "Multi-agent AI workflow using LangGraph",
+    "Secure authentication and file storage with Supabase",
+    "Real-time speech-to-text transcription with Gladia",
+    "Responsive web interface built with Next.js"
+  ],
+  "publicApiSurface": [
+    "POST /cases/create_case - Create new patient case with file uploads",
+    "GET /cases/all_cases - Retrieve all cases for a user",
+    "GET /cases/cases/{case_id} - Get specific case with files and AI insights",
+    "PUT /cases/cases/{case_id} - Update case information",
+    "DELETE /cases/cases/{case_id} - Delete a case",
+    "POST /cases/analyze/{case_id} - Start or complete case analysis",
+    "POST /cases/upload - Upload files to a case",
+    "GET /cases/files/{case_id} - Get all files for a case",
+    "GET /cases/file/{file_id} - Get specific file details",
+    "DELETE /cases/file/{file_id} - Delete a file"
+  ]
+}
